@@ -51,7 +51,6 @@ class Request(models.Model):
         default="",
     )
     description = models.TextField()
-    proposed_action = models.TextField(blank=True, default="")
     status = models.CharField(
         max_length=20,
         choices=Status.choices,

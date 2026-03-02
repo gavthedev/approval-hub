@@ -42,7 +42,8 @@ INSTALLED_APPS = [
 
     #my apps
     'users',
-    'companies'
+    'companies',
+    'approvals'
 ]
 
 MIDDLEWARE = [
