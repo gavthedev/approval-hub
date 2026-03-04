@@ -29,3 +29,20 @@ class ApproveRequestCreateView(CreateAPIView):
             request=approval_request
         )
         approval_request.transition_to(Request.Status.APPROVED)
+
+class RejectRequestCreateVIEW(CreateAPIVIEW):
+    permission_classes = [IsAuthenticated, IsCompanyApprover]
+    serializer_class = ApprovalSerializer
+
+    def perform_create(self, serializer):
+        request_id = selfkwargs["pk"]
+        approval_request = Request.objects.get(id=request_id)
+
+        if Approval.objects.filter(request=approval_request).exists():
+            raise ValidationError("This request has already been reviewed.")
+
+        serializer.save(
+            approver=self.request.user,
+            request=approval_request
+        )
+        approval_request.transition_to(Request.Status.REJECTED)
