@@ -54,5 +54,7 @@ class ReviewRequestView(APIView):
 
     def post(self, request, slug, pk):
         approval_request = Request.objects.get(id=pk)
+        approval_request.reviewed_by = request.user
+        approval_request.save(update_fields=["reviewed_by"])
         approval_request.transition_to(Request.Status.IN_REVIEW)
         return Response({"status": "in_review"})
