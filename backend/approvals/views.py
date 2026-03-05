@@ -4,6 +4,8 @@ from .models import Request, Approval
 from rest_framework.permissions import IsAuthenticated
 from companies.permissions import IsCompanyMember, IsCompanyApprover
 from rest_framework.exceptions import ValidationError
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
 class RequestListCreateView(ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsCompanyMember]
@@ -30,12 +32,12 @@ class ApproveRequestCreateView(CreateAPIView):
         )
         approval_request.transition_to(Request.Status.APPROVED)
 
-class RejectRequestCreateVIEW(CreateAPIVIEW):
+class RejectRequestCreateView(CreateAPIView):
     permission_classes = [IsAuthenticated, IsCompanyApprover]
     serializer_class = ApprovalSerializer
 
     def perform_create(self, serializer):
-        request_id = selfkwargs["pk"]
+        request_id = self.kwargs["pk"]
         approval_request = Request.objects.get(id=request_id)
 
         if Approval.objects.filter(request=approval_request).exists():
@@ -46,3 +48,11 @@ class RejectRequestCreateVIEW(CreateAPIVIEW):
             request=approval_request
         )
         approval_request.transition_to(Request.Status.REJECTED)
+
+class ReviewRequestView(APIView):
+    permission_classes = [IsAuthenticated, IsCompanyApprover]
+
+    def post(self, request, slug, pk):
+        approval_request = Request.objects.get(id=pk)
+        approval_request.transition_to(Request.Status.IN_REVIEW)
+        return Response({"status": "in_review"})
