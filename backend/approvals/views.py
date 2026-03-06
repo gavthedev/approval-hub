@@ -6,6 +6,7 @@ from companies.permissions import IsCompanyMember, IsCompanyApprover
 from rest_framework.exceptions import ValidationError
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from companies.models import Company
 
 class RequestListCreateView(ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsCompanyMember]
@@ -14,6 +15,14 @@ class RequestListCreateView(ListCreateAPIView):
     def get_queryset(self):
         slug = self.kwargs["slug"]
         return Request.objects.filter(company__slug=slug)
+
+    def perform_create(self, serializer):
+        slug = self.kwargs["slug"]
+        company=Company.objects.get(slug=slug)
+        serializer.save(
+            company=company,
+            created_by=self.request.user
+        )
 
 class ApproveRequestCreateView(CreateAPIView):
     permission_classes = [IsAuthenticated, IsCompanyApprover]
