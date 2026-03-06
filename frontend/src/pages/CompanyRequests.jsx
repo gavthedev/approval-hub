@@ -75,7 +75,7 @@ export default function CompanyRequests() {
             {requests.map((req) => (
                 <div key={req.id} style={{ border: "1px solid gray", padding: "10px", margin: "10px 0" }}>
                     <h3>{req.title}</h3>
-                    <p>Status: {req.status} | Category: {req.category} | Description: {req.description} </p>
+                    <p>Status: {req.status} | Category: {req.category} | Severity: {req.severity} | Description: {req.description} </p>
                 </div>
             ))}
         </div>
