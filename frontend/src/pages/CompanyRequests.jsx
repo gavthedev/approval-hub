@@ -101,9 +101,9 @@ export default function CompanyRequests() {
                 <div key={req.id} style={{ border: "1px solid gray", padding: "10px", margin: "10px 0" }}>
                     <h3>{req.title}</h3>
                     <p>Status: {req.status} | Category: {req.category} | Severity: {req.severity} | Description: {req.description} </p>
+                    <Button variant={'warning'} onClick={() => handleReview(req.id)}>Review</Button>
                     <Button variant={'primary'} onClick={() => handleApprove(req.id)}>Accept</Button>
                     <Button variant={'danger'} onClick={() => handleReject(req.id)}>Reject</Button>
-                    <Button variant={'warning'} onClick={() => handleReview(req.id)}>Review</Button>
                 </div>
             ))}
         </div>

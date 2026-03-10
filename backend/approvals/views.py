@@ -18,11 +18,12 @@ class RequestListCreateView(ListCreateAPIView):
 
     def perform_create(self, serializer):
         slug = self.kwargs["slug"]
-        company=Company.objects.get(slug=slug)
-        serializer.save(
+        company = Company.objects.get(slug=slug)
+        instance = serializer.save(
             company=company,
             created_by=self.request.user
         )
+        instance.transition_to(Request.Status.SUBMITTED)
 
 class ApproveRequestCreateView(CreateAPIView):
     permission_classes = [IsAuthenticated, IsCompanyApprover]
@@ -35,10 +36,10 @@ class ApproveRequestCreateView(CreateAPIView):
         if Approval.objects.filter(request=approval_request).exists():
             raise ValidationError("This request has already been reviewed.")
 
-        serializer.save(
-            approver=self.request.user,
-            request=approval_request
-        )
+        if not approval_request.can_transition_to(Request.Status.APPROVED):
+            raise ValidationError(f"Cannot approve a request with status '{approval_request.status}'.")
+
+        serializer.save(approver=self.request.user, request=approval_request)
         approval_request.transition_to(Request.Status.APPROVED)
 
 class RejectRequestCreateView(CreateAPIView):
@@ -52,10 +53,10 @@ class RejectRequestCreateView(CreateAPIView):
         if Approval.objects.filter(request=approval_request).exists():
             raise ValidationError("This request has already been reviewed.")
 
-        serializer.save(
-            approver=self.request.user,
-            request=approval_request
-        )
+        if not approval_request.can_transition_to(Request.Status.REJECTED):
+            raise ValidationError(f"Cannot reject a request with status '{approval_request.status}'.")
+
+        serializer.save(approver=self.request.user, request=approval_request)
         approval_request.transition_to(Request.Status.REJECTED)
 
 class ReviewRequestView(APIView):
