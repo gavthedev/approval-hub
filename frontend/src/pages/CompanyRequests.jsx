@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams } from "react-router-dom";
 import client from "../api/client";
+import Button from "../components/Buttons.jsx"
 
 export default function CompanyRequests() {
     const { slug } = useParams();
@@ -30,6 +31,30 @@ export default function CompanyRequests() {
         setTitle("");
         setDescription("");
     };
+
+    const handleApprove = async (requestId) => {
+            await client.post(`/companies/${slug}/requests/${requestId}/approve/`, {
+                decision: "approved",
+                comment: "",
+            });
+            const res = await client.get(`/companies/${slug}/requests/`);
+            setRequests(res.data)
+    };
+
+    const handleReject = async (requestId) => {
+        await client.post(`/companies/${slug}/requests/${requestId}/reject/`, {
+            decision: "rejected",
+            comment: "",
+        });
+        const res = await client.get(`/companies/${slug}/requests/`)
+        setRequests(res.data)
+    }
+
+    const handleReview = async (requestId) => {
+        await client.post(`/companies/${slug}/requests/${requestId}/review/`);
+        const res = await client.get(`/companies/${slug}/requests/`)
+        setRequests(res.data)
+    }
 
     return (
         <div>
@@ -76,6 +101,9 @@ export default function CompanyRequests() {
                 <div key={req.id} style={{ border: "1px solid gray", padding: "10px", margin: "10px 0" }}>
                     <h3>{req.title}</h3>
                     <p>Status: {req.status} | Category: {req.category} | Severity: {req.severity} | Description: {req.description} </p>
+                    <Button variant={'primary'} onClick={() => handleApprove(req.id)}>Accept</Button>
+                    <Button variant={'danger'} onClick={() => handleReject(req.id)}>Reject</Button>
+                    <Button variant={'warning'} onClick={() => handleReview(req.id)}>Review</Button>
                 </div>
             ))}
         </div>
