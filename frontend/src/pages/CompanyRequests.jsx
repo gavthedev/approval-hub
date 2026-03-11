@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
-import { useParams } from "react-router-dom";
+import {useEffect, useState} from "react";
+import {useParams} from "react-router-dom";
 import client from "../api/client";
 import Button from "../components/Buttons.jsx"
 
 export default function CompanyRequests() {
-    const { slug } = useParams();
+    const {slug} = useParams();
     const [requests, setRequests] = useState([]);
     const [showForm, setShowForm] = useState(false);
     const [title, setTitle] = useState("");
@@ -33,12 +33,12 @@ export default function CompanyRequests() {
     };
 
     const handleApprove = async (requestId) => {
-            await client.post(`/companies/${slug}/requests/${requestId}/approve/`, {
-                decision: "approved",
-                comment: "",
-            });
-            const res = await client.get(`/companies/${slug}/requests/`);
-            setRequests(res.data)
+        await client.post(`/companies/${slug}/requests/${requestId}/approve/`, {
+            decision: "approved",
+            comment: "",
+        });
+        const res = await client.get(`/companies/${slug}/requests/`);
+        setRequests(res.data)
     };
 
     const handleReject = async (requestId) => {
@@ -64,13 +64,13 @@ export default function CompanyRequests() {
             </button>
 
             {showForm && (
-                <form onSubmit={handleCreate} style={{ margin: "10px 0" }}>
+                <form onSubmit={handleCreate} style={{margin: "10px 0"}}>
                     <input
                         placeholder="Title"
                         value={title}
                         onChange={(e) => setTitle(e.target.value)}
                     />
-                    <br />
+                    <br/>
                     <select value={category} onChange={(e) => setCategory(e.target.value)}>
                         <option value="freezer">Freezer</option>
                         <option value="pos">POS</option>
@@ -85,25 +85,32 @@ export default function CompanyRequests() {
                     {/*    <option value="medium">Medium</option>*/}
                     {/*    <option value="high">High</option>*/}
                     {/*</select>*/}
-                    <br />
+                    <br/>
                     <textarea
                         placeholder="Description"
                         value={description}
                         onChange={(e) => setDescription(e.target.value)}
                     />
-                    <br />
+                    <br/>
                     <button type="submit">Submit</button>
                 </form>
             )}
 
             {requests.length === 0 && <p>No requests yet.</p>}
             {requests.map((req) => (
-                <div key={req.id} style={{ border: "1px solid gray", padding: "10px", margin: "10px 0" }}>
+                <div key={req.id} style={{border: "1px solid gray", padding: "10px", margin: "10px 0"}}>
                     <h3>{req.title}</h3>
                     <p>Status: {req.status} | Category: {req.category} | Severity: {req.severity} | Description: {req.description} </p>
-                    <Button variant={'warning'} onClick={() => handleReview(req.id)}>Review</Button>
-                    <Button variant={'primary'} onClick={() => handleApprove(req.id)}>Accept</Button>
-                    <Button variant={'danger'} onClick={() => handleReject(req.id)}>Reject</Button>
+
+                    {req.status === "submitted" &&
+                        <Button variant={'warning'} onClick={() => handleReview(req.id)}>Review</Button>}
+
+                    {req.status === "in_review" && (
+                        <>
+                            <Button variant={'primary'} onClick={() => handleApprove(req.id)}>Accept</Button>
+                            <Button variant={'danger'} onClick={() => handleReject(req.id)}>Reject</Button>
+                        </>
+                    )}
                 </div>
             ))}
         </div>
