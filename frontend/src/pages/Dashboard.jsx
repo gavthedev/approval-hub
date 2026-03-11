@@ -10,14 +10,17 @@ export default function Dashboard() {
         });
     }, []);
 
-    return (
-        <div className="min-h-screen min-w-screen flex flex-col items-center justify-center">
-            <h1 className="m-4 text ">My Companies</h1>
+   return (
+    <div className="min-h-screen bg-gray-100 p-8">
+        <h1 className="text-2xl font-bold mb-6">My Companies</h1>
+        <div className="grid gap-4">
             {companies.map((company) => (
-                <div key={company.id} className="border rounded m-1">
-                    <a href={`/company/${company.slug}`}>{company.name}</a>
-                </div>
+                <a key={company.id} href={`/company/${company.slug}`}
+                   className="bg-white p-4 rounded shadow hover:shadow-md transition">
+                    <h2 className="text-lg font-semibold">{company.name}</h2>
+                </a>
             ))}
         </div>
-    );
+    </div>
+);
 }
