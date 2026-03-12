@@ -57,21 +57,21 @@ export default function CompanyRequests() {
     }
 
     return (
-        <div>
-            <h1>Requests</h1>
-            <button onClick={() => setShowForm(!showForm)}>
+        <div className="flex flex-col items-center">
+            <h1 className="text-2xl m-2">Requests</h1>
+            <button onClick={() => setShowForm(!showForm)} className="bg-gray-600 text-white px-4 py-2 rounded hover:bg-gray-700 mb-4">
                 {showForm ? "Cancel" : "New Request"}
             </button>
 
             {showForm && (
-                <form onSubmit={handleCreate} style={{margin: "10px 0"}}>
-                    <input
-                        placeholder="Title"
-                        value={title}
-                        onChange={(e) => setTitle(e.target.value)}
+                <form onSubmit={handleCreate} className="bg-white p-6 rounded shadow mb-6 w-full max-w-2xl">
+                    <input className="w-full p-2 border rounded mb-4"
+                           placeholder="Title"
+                           value={title}
+                           onChange={(e) => setTitle(e.target.value)}
                     />
-                    <br/>
-                    <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                    <select className="w-full p-2 border rounded mb-4" value={category}
+                            onChange={(e) => setCategory(e.target.value)}>
                         <option value="freezer">Freezer</option>
                         <option value="pos">POS</option>
                         <option value="oven">Oven</option>
@@ -85,22 +85,24 @@ export default function CompanyRequests() {
                     {/*    <option value="medium">Medium</option>*/}
                     {/*    <option value="high">High</option>*/}
                     {/*</select>*/}
-                    <br/>
-                    <textarea
-                        placeholder="Description"
-                        value={description}
-                        onChange={(e) => setDescription(e.target.value)}
+                    <textarea className="w-full p-2 border rounded mb-4"
+                              placeholder="Description"
+                              value={description}
+                              onChange={(e) => setDescription(e.target.value)}
                     />
-                    <br/>
-                    <button type="submit">Submit</button>
+                    <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Submit
+                    </button>
                 </form>
             )}
 
             {requests.length === 0 && <p>No requests yet.</p>}
             {requests.map((req) => (
-                <div key={req.id} style={{border: "1px solid gray", padding: "10px", margin: "10px 0"}}>
-                    <h3>{req.title}</h3>
-                    <p>Status: {req.status} | Category: {req.category} | Severity: {req.severity} | Description: {req.description} </p>
+                <div key={req.id} className="bg-white p-4 rounded shadow mb-4 w-full max-w-2xl">
+                    <h3 className="text-lg font-semibold">{req.title}</h3>
+                    <p className="text-sm text-gray-600 mb-2">
+                        Status: {req.status} | Category: {req.category}
+                    </p>
+                    <p className="text-gray-700 mb-3">{req.description}</p>
 
                     {req.status === "submitted" &&
                         <Button variant={'warning'} onClick={() => handleReview(req.id)}>Review</Button>}
