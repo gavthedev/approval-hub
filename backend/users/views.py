@@ -5,4 +5,6 @@ from rest_framework.response import Response
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def me(request):
-    return request.user
+    return Response({
+        request.user.email
+    })
