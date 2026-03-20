@@ -14,4 +14,7 @@ urlpatterns = [
 
     # approvals
     path('api/companies/<slug:slug>/', include('approvals.urls')),
+    
+    # users
+    path("api/", include("users.urls")),
 ]

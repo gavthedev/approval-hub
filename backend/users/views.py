@@ -6,5 +6,5 @@ from rest_framework.response import Response
 @permission_classes([IsAuthenticated])
 def me(request):
     return Response({
-        request.user.email
+        "first_name": request.user.first_name
     })
