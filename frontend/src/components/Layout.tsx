@@ -1,5 +1,6 @@
 import {useEffect, useState} from "react";
 import client from "../api/client";
+import * as React from "react";
 
 export default function Layout({children}: {children: React.ReactNode}) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -25,7 +26,7 @@ export default function Layout({children}: {children: React.ReactNode}) {
             >
                 {sidebarOpen && (
                     <>
-                        {/* top part of side bar */}
+                        {/* top part of */}
                         <div className="flex-1">
                             <a href="/" className="block mb-4 hover:text-gray-400 font-bold">
                                 Approval Hub
