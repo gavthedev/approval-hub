@@ -6,7 +6,7 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         try {
             const res = await client.post("/token/", { email, password });

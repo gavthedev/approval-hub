@@ -1,12 +1,12 @@
 import {useEffect, useState} from "react";
 import client from "../api/client";
 
-export default function Layout({children}) {
+export default function Layout({children}: {children: React.ReactNode}) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [user, setUser] = useState(null);
 
     useEffect(() => {
-        client.get("/me/").then((res) => setUser(res.data));
+        client.get("/me/").then((res) => setUser(res.data)).catch(console.error);
     }, []);
 
     const handleLogout = () => {

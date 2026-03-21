@@ -7,7 +7,7 @@ export default function Dashboard() {
     useEffect(() => {
         client.get("/companies/").then((res) => {
             setCompanies(res.data);
-        });
+        }).catch(console.error);
     }, []);
 
    return (

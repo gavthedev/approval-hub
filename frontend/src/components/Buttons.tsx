@@ -1,4 +1,8 @@
-export default function Button({ children, onClick, variant = "primary" }) {
+export default function Button({ children, onClick, variant = "primary" }: {
+    children: React.ReactNode;
+    onClick?: () => void;
+    variant?: "primary" | "danger" | "warning";
+}) {
     const styles = {
         primary: { backgroundColor: "#2563eb", color: "white" },
         danger: { backgroundColor: "#dc2626", color: "white" },

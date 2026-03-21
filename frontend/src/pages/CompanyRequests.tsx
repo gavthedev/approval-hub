@@ -1,7 +1,7 @@
 import {useEffect, useState} from "react";
 import {useParams} from "react-router-dom";
 import client from "../api/client";
-import Button from "../components/Buttons.jsx"
+import Button from "../components/Buttons.tsx"
 
 export default function CompanyRequests() {
     const {slug} = useParams();
@@ -15,46 +15,62 @@ export default function CompanyRequests() {
     useEffect(() => {
         client.get(`/companies/${slug}/requests/`).then((res) => {
             setRequests(res.data);
-        });
+        }).catch(console.error);
     }, [slug]);
 
-    const handleCreate = async (e) => {
+    const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
-        const res = await client.post(`/companies/${slug}/requests/`, {
-            title,
-            category,
-            // severity,
-            description,
-        });
-        setRequests([res.data, ...requests]);
-        setShowForm(false);
-        setTitle("");
-        setDescription("");
+        try {
+            const res = await client.post(`/companies/${slug}/requests/`, {
+                title,
+                category,
+                // severity,
+                description,
+            });
+            setRequests([res.data, ...requests]);
+            setShowForm(false);
+            setTitle("");
+            setDescription("");
+        } catch (err) {
+            console.error(err);
+        }
     };
 
-    const handleApprove = async (requestId) => {
-        await client.post(`/companies/${slug}/requests/${requestId}/approve/`, {
-            decision: "approved",
-            comment: "",
-        });
-        const res = await client.get(`/companies/${slug}/requests/`);
-        setRequests(res.data)
+    const handleApprove = async (requestId: number) => {
+        try {
+            await client.post(`/companies/${slug}/requests/${requestId}/approve/`, {
+                decision: "approved",
+                comment: "",
+            });
+            const res = await client.get(`/companies/${slug}/requests/`);
+            setRequests(res.data);
+        } catch (err) {
+            console.error(err);
+        }
     };
 
-    const handleReject = async (requestId) => {
-        await client.post(`/companies/${slug}/requests/${requestId}/reject/`, {
-            decision: "rejected",
-            comment: "",
-        });
-        const res = await client.get(`/companies/${slug}/requests/`)
-        setRequests(res.data)
-    }
+    const handleReject = async (requestId: number) => {
+        try {
+            await client.post(`/companies/${slug}/requests/${requestId}/reject/`, {
+                decision: "rejected",
+                comment: "",
+            });
+            const res = await client.get(`/companies/${slug}/requests/`);
+            setRequests(res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
-    const handleReview = async (requestId) => {
-        await client.post(`/companies/${slug}/requests/${requestId}/review/`);
-        const res = await client.get(`/companies/${slug}/requests/`)
-        setRequests(res.data)
-    }
+    const handleReview = async (requestId: number) => {
+        try {
+            await client.post(`/companies/${slug}/requests/${requestId}/review/`);
+            const res = await client.get(`/companies/${slug}/requests/`);
+            setRequests(res.data);
+        } catch (err) {
+            console.error(err);
+        }
+    };
 
     return (
         <div className="flex flex-col items-center">
