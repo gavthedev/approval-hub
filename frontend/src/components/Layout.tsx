@@ -3,7 +3,7 @@ import client from "../api/client";
 
 export default function Layout({children}: {children: React.ReactNode}) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState<User | null>(null);
 
     useEffect(() => {
         client.get("/me/").then((res) => setUser(res.data)).catch(console.error);
