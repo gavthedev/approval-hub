@@ -1,8 +1,8 @@
+import * as React from "react";
 import {useEffect, useState} from "react";
 import client from "../api/client";
-import * as React from "react";
 
-export default function Layout({children}: {children: React.ReactNode}) {
+export default function Layout({children}: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(true);
     const [user, setUser] = useState<User | null>(null);
 

@@ -6,7 +6,6 @@ from django.db import migrations, models
 
 
 class Migration(migrations.Migration):
-
     dependencies = [
         ('approvals', '0002_remove_request_proposed_action'),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
@@ -16,6 +15,7 @@ class Migration(migrations.Migration):
         migrations.AddField(
             model_name='request',
             name='reviewed_by',
-            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL, related_name='reviewed_requests', to=settings.AUTH_USER_MODEL),
+            field=models.ForeignKey(blank=True, null=True, on_delete=django.db.models.deletion.SET_NULL,
+                                    related_name='reviewed_requests', to=settings.AUTH_USER_MODEL),
         ),
     ]

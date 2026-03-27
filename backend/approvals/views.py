@@ -1,12 +1,14 @@
-from .serializers import RequestSerializer, ApprovalSerializer
-from rest_framework.generics import CreateAPIView, ListCreateAPIView
-from .models import Request, Approval
-from rest_framework.permissions import IsAuthenticated
+from companies.models import Company
 from companies.permissions import IsCompanyMember, IsCompanyApprover
 from rest_framework.exceptions import ValidationError
-from rest_framework.views import APIView
+from rest_framework.generics import CreateAPIView, ListCreateAPIView
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from companies.models import Company
+from rest_framework.views import APIView
+
+from .models import Request, Approval
+from .serializers import RequestSerializer, ApprovalSerializer
+
 
 class RequestListCreateView(ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsCompanyMember]
@@ -25,6 +27,7 @@ class RequestListCreateView(ListCreateAPIView):
         )
         instance.transition_to(Request.Status.SUBMITTED)
 
+
 class ApproveRequestCreateView(CreateAPIView):
     permission_classes = [IsAuthenticated, IsCompanyApprover]
     serializer_class = ApprovalSerializer
@@ -42,6 +45,7 @@ class ApproveRequestCreateView(CreateAPIView):
         serializer.save(approver=self.request.user, request=approval_request)
         approval_request.transition_to(Request.Status.APPROVED)
 
+
 class RejectRequestCreateView(CreateAPIView):
     permission_classes = [IsAuthenticated, IsCompanyApprover]
     serializer_class = ApprovalSerializer
@@ -58,6 +62,7 @@ class RejectRequestCreateView(CreateAPIView):
 
         serializer.save(approver=self.request.user, request=approval_request)
         approval_request.transition_to(Request.Status.REJECTED)
+
 
 class ReviewRequestView(APIView):
     permission_classes = [IsAuthenticated, IsCompanyApprover]

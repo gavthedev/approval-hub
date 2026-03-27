@@ -61,8 +61,8 @@ class Request(models.Model):
     reviewed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
-        null = True,
-        blank = True,
+        null=True,
+        blank=True,
         related_name="reviewed_requests",
     )
 

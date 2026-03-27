@@ -28,4 +28,5 @@ class InviteAdmin(admin.ModelAdmin):
 
     def is_expired(self, obj):
         return obj.is_expired
+
     is_expired.boolean = True
