@@ -1,6 +1,7 @@
 import * as React from "react";
 import {useEffect, useState} from "react";
 import client from "../api/client";
+import { User } from "../types"
 
 export default function Layout({children}: { children: React.ReactNode }) {
     const [sidebarOpen, setSidebarOpen] = useState(true);

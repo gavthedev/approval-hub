@@ -8,7 +8,7 @@ export interface User {
 export interface Company {
     id: number;
     name: string;
-    slug: stringl
+    slug: string;
     created_by: number;
     created_at: string;
 }

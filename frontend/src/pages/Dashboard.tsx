@@ -1,8 +1,9 @@
 import {useEffect, useState} from "react";
 import client from "../api/client";
+import { Company } from "../types"
 
 export default function Dashboard() {
-    const [companies, setCompanies] = useState([]);
+    const [companies, setCompanies] = useState<Company[]>([]);
 
     useEffect(() => {
         client.get("/companies/").then((res) => {

@@ -1,11 +1,12 @@
 import {useEffect, useState} from "react";
 import {useParams} from "react-router-dom";
 import client from "../api/client";
-import Button from "../components/Buttons.tsx"
+import Button from "../components/Buttons"
+import { Request } from "../types"
 
 export default function CompanyRequests() {
     const {slug} = useParams();
-    const [requests, setRequests] = useState([]);
+    const [requests, setRequests] = useState<Request[]>([]);
     const [showForm, setShowForm] = useState(false);
     const [title, setTitle] = useState("");
     const [category, setCategory] = useState("other");

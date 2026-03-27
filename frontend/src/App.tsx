@@ -3,7 +3,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import CompanyRequests from "./pages/CompanyRequests";
 import Layout from "./components/Layout";
-import ProtectedRoute from "./components/ProtectedRoute.tsx"
+import ProtectedRoute from "./components/ProtectedRoute"
 
 export default function App() {
     return (
