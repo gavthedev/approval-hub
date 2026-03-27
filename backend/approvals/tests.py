@@ -35,6 +35,7 @@ def test_request_state_machine():
     with pytest.raises(ValueError):
         req.transition_to(Request.Status.DRAFT)
 
+
 @pytest.mark.django_db
 def test_requests_endpoint_requires_auth():
     client = APIClient()
@@ -69,6 +70,7 @@ def test_requests_endpoint_with_membership():
     client.force_authenticate(user=user)
     res = client.get(f"/api/companies/{company.slug}/requests/")
     assert res.status_code == 200
+
 
 @pytest.mark.django_db
 def test_approve_flow():
