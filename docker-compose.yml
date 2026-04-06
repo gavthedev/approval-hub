@@ -36,10 +36,7 @@ services:
       - "5173:5173"
     command: npm run dev -- --host
 
-volumes:
-  postgres_data:
-
-nginx:
+  nginx:
     image: nginx:alpine
     ports:
       - "80:80"
@@ -49,3 +46,6 @@ nginx:
     depends_on:
       - backend
       - frontend
+
+volumes:
+  postgres_data:
