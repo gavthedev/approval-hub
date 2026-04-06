@@ -9,18 +9,22 @@ services:
       - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   backend:
     build:
       context: ./backend
-    environment:
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/approval_hub
-      - DEBUG=True
-      - SECRET_KEY=dev-secret-key-change-in-production
+    env_file:
+      - ./backend/.env
     ports:
       - "8000:8000"
     depends_on:
-      - db
+      db:
+        condition: service_healthy
     command: >
       sh -c "python manage.py migrate &&
              python manage.py runserver 0.0.0.0:8000"
