@@ -1,10 +1,10 @@
 import axios from "axios";
 
 const client = axios.create({
-    baseURL: "http://localhost:8000/api",
+    baseURL: "http://approvalhub.ch/api",
 });
 
-const address = "http://localhost:8000"
+const address = "http://approvalhub.ch"
 
 client.interceptors.request.use((config) => {
     const token = localStorage.getItem("access_token");
