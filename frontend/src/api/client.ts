@@ -1,10 +1,10 @@
 import axios from "axios";
 
 const client = axios.create({
-    baseURL: "https://approvalhub.ch/api",
+    baseURL: import.meta.env.VITE_API_URL,
 });
 
-const address = "https://approvalhub.ch"
+const address = import.meta.env.VITE_API_BASE
 
 client.interceptors.request.use((config) => {
     const token = localStorage.getItem("access_token");
