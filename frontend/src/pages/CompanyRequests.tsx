@@ -2,7 +2,7 @@ import {useEffect, useState} from "react";
 import {useParams} from "react-router-dom";
 import client from "../api/client";
 import Button from "../components/Buttons"
-import { Request } from "../types"
+import {Request} from "../types"
 
 export default function CompanyRequests() {
     const {slug} = useParams();
@@ -12,6 +12,13 @@ export default function CompanyRequests() {
     const [category, setCategory] = useState("other");
     // const [severity, setSeverity] = useState("medium");
     const [description, setDescription] = useState("");
+    const [showInviteForm, setShowInviteForm] = useState(false);
+    const [inviteEmail, setInviteEmail] = useState("");
+    const [inviteFirstName, setInviteFirstName] = useState("");
+    const [inviteLastName, setInviteLastName] = useState("");
+    const [inviteRole, setInviteRole] = useState("member");
+    const [inviteDob, setInviteDob] = useState("");
+    const [inviteMessage, setInviteMessage] = useState(""); 
 
     useEffect(() => {
         client.get(`/companies/${slug}/requests/`).then((res) => {
@@ -70,6 +77,27 @@ export default function CompanyRequests() {
             setRequests(res.data);
         } catch (err) {
             console.error(err);
+        }
+    };
+
+    const handleInvite = async (e: React.SyntheticEvent) => {
+        e.preventDefault();
+        try {
+            await client.post(`/companies/${slug}/invite/`, {
+                email: inviteEmail,
+                first_name: inviteFirstName,
+                last_name: inviteLastName,
+                role: inviteRole,
+                date_of_birth: inviteDob,
+            });
+            setInviteMessage("Invitation sent!");
+            setShowInviteForm(false);
+            setInviteEmail("");
+            setInviteFirstName("");
+            setInviteLastName("");
+            setInviteDob("");
+        } catch (err: any) {
+            setInviteMessage(err.response?.data?.error || "Something went wrong.");
         }
     };
 
@@ -133,6 +161,37 @@ export default function CompanyRequests() {
                     )}
                 </div>
             ))}
+
+            <button onClick={() => setShowInviteForm(!showInviteForm)}
+                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mb-4 ml-2">
+                {showInviteForm ? "Cancel" : "Invite Member"}
+            </button>
+
+            {inviteMessage && <p className="text-green-500 mb-4">{inviteMessage}</p>}
+
+            {showInviteForm && (
+                <form onSubmit={handleInvite} className="bg-white p-6 rounded shadow mb-6 w-full max-w-2xl">
+                    <input className="w-full p-2 border rounded mb-4" placeholder="Email" type="email"
+                           value={inviteEmail} onChange={(e) => setInviteEmail(e.target.value)} required/>
+                    <input className="w-full p-2 border rounded mb-4" placeholder="First Name"
+                           value={inviteFirstName} onChange={(e) => setInviteFirstName(e.target.value)} required/>
+                    <input className="w-full p-2 border rounded mb-4" placeholder="Last Name"
+                           value={inviteLastName} onChange={(e) => setInviteLastName(e.target.value)} required/>
+                    <select className="w-full p-2 border rounded mb-4"
+                            value={inviteRole} onChange={(e) => setInviteRole(e.target.value)}>
+                        <option value="member">Member</option>
+                        <option value="approver">Approver</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                    <label className="block text-sm text-gray-600 mb-1">Date of Birth</label>
+                    <input className="w-full p-2 border rounded mb-4" type="date"
+                           value={inviteDob} onChange={(e) => setInviteDob(e.target.value)} required/>
+                    <button type="submit" className="w-full bg-green-600 text-white p-2 rounded hover:bg-green-700">
+                        Send Invitation
+                    </button>
+                </form>
+            )}
         </div>
+
     );
 }
