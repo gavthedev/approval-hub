@@ -4,6 +4,7 @@ import Register from "./pages/Register";
 import Verify from "./pages/Verify";
 import Dashboard from "./pages/Dashboard";
 import CompanyRequests from "./pages/CompanyRequests";
+import InviteClaim from "./pages/InviteClaim";
 import Layout from "./components/Layout";
 import ProtectedRoute from "./components/ProtectedRoute"
 
@@ -14,6 +15,7 @@ export default function App() {
                 <Route path="/register" element={<Register/>}/>
                 <Route path="/verify/:token" element={<Verify/>}/>
                 <Route path="/login" element={<Login/>}/>
+                <Route path="/invite/:token" element={<InviteClaim/>}/>
                 <Route path="/" element={
                     <ProtectedRoute>
                         <Layout><Dashboard/></Layout>
