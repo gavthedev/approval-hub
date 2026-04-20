@@ -1,3 +1,5 @@
+from django.urls import path
+
 from .views import me, register, verify_email, claim_invite
 
 urlpatterns = [
