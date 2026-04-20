@@ -17,6 +17,7 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           script: |
+            git config --global --add safe.directory /opt/approval-hub
             cd /opt/approval-hub
             git pull
             docker compose up --build -d
