@@ -20,4 +20,3 @@ jobs:
             cd /opt/approval-hub
             git pull
             docker compose up --build -d
-        
