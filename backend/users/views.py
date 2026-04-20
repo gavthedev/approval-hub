@@ -1,5 +1,7 @@
 import resend
+from companies.models import Invite
 from decouple import config
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -77,3 +79,51 @@ def verify_email(request, token):
             {"error": "Invalid confirmation link."},
             status=status.HTTP_400_BAD_REQUEST
         )
+
+
+@api_view(["POST"])
+@permission_classes([AllowAny])
+def claim_invite(request, token):
+    try:
+        invite = Invite.objects.get(token=token)
+    except Invite.DoesNotExist:
+        return Response({"error": "Invalid invite link."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if invite.is_used:
+        return Response({"error": "This invite has already been used."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if invite.is_expired:
+        return Response({"error": "This invite has expired."}, status=status.HTTP_400_BAD_REQUEST)
+
+    date_of_birth = request.data.get("date_of_birth")
+    password = request.data.get("password")
+
+    if not date_of_birth or not password:
+        return Response({"error": "date_of_birth and password are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+    try:
+        user = User.objects.get(email=invite.email)
+    except User.DoesNotExist:
+        return Response({"error": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+    if str(user.date_of_birth) != date_of_birth:
+        return Response({"error": "Incorrect date of birth."}, status=status.HTTP_400_BAD_REQUEST)
+
+    user.set_password(password)
+    user.is_active = True
+    user.is_verified = True
+    user.save()
+
+    from companies.models import Membership
+    Membership.objects.get_or_create(
+        user=user,
+        company=invite.company,
+        defaults={"role": invite.role}
+    )
+
+    invite.is_used = True
+    invite.claimed_by = user
+    invite.claimed_at = timezone.now()
+    invite.save()
+
+    return Response({"message": "Account activated! You can now login."}, status=status.HTTP_200_OK)
