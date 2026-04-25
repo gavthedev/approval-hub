@@ -101,3 +101,17 @@ def invite_member(request, slug):
         {"message": f"Invitation sent to {email}."},
         status=status.HTTP_201_CREATED
     )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_role(request, slug):
+    try:
+        membership = Membership.objects.get(
+            user=request.user,
+            company__slug=slug,
+            is_active=True
+        )
+        return Response({"role": membership.role})
+    except Membership.DoesNotExist:
+        return Response({"error": "Not a member."}, status=status.HTTP_403_FORBIDDEN)

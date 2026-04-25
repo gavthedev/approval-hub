@@ -18,12 +18,17 @@ export default function CompanyRequests() {
     const [inviteLastName, setInviteLastName] = useState("");
     const [inviteRole, setInviteRole] = useState("member");
     const [inviteDob, setInviteDob] = useState("");
-    const [inviteMessage, setInviteMessage] = useState(""); 
+    const [inviteMessage, setInviteMessage] = useState("");
+    const [myRole, setMyRole] = useState("");
 
     useEffect(() => {
         client.get(`/companies/${slug}/requests/`).then((res) => {
             setRequests(res.data);
         }).catch(console.error);
+    }, [slug]);
+
+    useEffect(() => {
+        client.get(`/companies/${slug}/my-role/`).then(res => setMyRole(res.data.role));
     }, [slug]);
 
     const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -111,11 +116,8 @@ export default function CompanyRequests() {
 
             {showForm && (
                 <form onSubmit={handleCreate} className="bg-white p-6 rounded shadow mb-6 w-full max-w-2xl">
-                    <input className="w-full p-2 border rounded mb-4"
-                           placeholder="Title"
-                           value={title}
-                           onChange={(e) => setTitle(e.target.value)}
-                    />
+                    <input className="w-full p-2 border rounded mb-4" placeholder="Title"
+                           value={title} onChange={(e) => setTitle(e.target.value)}/>
                     <select className="w-full p-2 border rounded mb-4" value={category}
                             onChange={(e) => setCategory(e.target.value)}>
                         <option value="freezer">Freezer</option>
@@ -125,18 +127,10 @@ export default function CompanyRequests() {
                         <option value="laptop">Laptop</option>
                         <option value="other">Other</option>
                     </select>
-                    {/*<br />*/}
-                    {/*<select value={severity} onChange={(e) => setSeverity(e.target.value)}>*/}
-                    {/*    <option value="low">Low</option>*/}
-                    {/*    <option value="medium">Medium</option>*/}
-                    {/*    <option value="high">High</option>*/}
-                    {/*</select>*/}
-                    <textarea className="w-full p-2 border rounded mb-4"
-                              placeholder="Description"
-                              value={description}
-                              onChange={(e) => setDescription(e.target.value)}
-                    />
-                    <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">Submit
+                    <textarea className="w-full p-2 border rounded mb-4" placeholder="Description"
+                              value={description} onChange={(e) => setDescription(e.target.value)}/>
+                    <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700">
+                        Submit
                     </button>
                 </form>
             )}
@@ -145,14 +139,10 @@ export default function CompanyRequests() {
             {requests.map((req) => (
                 <div key={req.id} className="bg-white p-4 rounded shadow mb-4 w-full max-w-2xl">
                     <h3 className="text-lg font-semibold">{req.title}</h3>
-                    <p className="text-sm text-gray-600 mb-2">
-                        Status: {req.status} | Category: {req.category}
-                    </p>
+                    <p className="text-sm text-gray-600 mb-2">Status: {req.status} | Category: {req.category}</p>
                     <p className="text-gray-700 mb-3">{req.description}</p>
-
                     {req.status === "submitted" &&
                         <Button variant={'warning'} onClick={() => handleReview(req.id)}>Review</Button>}
-
                     {req.status === "in_review" && (
                         <>
                             <Button variant={'primary'} onClick={() => handleApprove(req.id)}>Accept</Button>
@@ -162,10 +152,12 @@ export default function CompanyRequests() {
                 </div>
             ))}
 
-            <button onClick={() => setShowInviteForm(!showInviteForm)}
-                    className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mb-4 ml-2">
-                {showInviteForm ? "Cancel" : "Invite Member"}
-            </button>
+            {myRole === "admin" && (
+                <button onClick={() => setShowInviteForm(!showInviteForm)}
+                        className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700 mb-4 ml-2">
+                    {showInviteForm ? "Cancel" : "Invite Member"}
+                </button>
+            )}
 
             {inviteMessage && <p className="text-green-500 mb-4">{inviteMessage}</p>}
 
@@ -192,6 +184,5 @@ export default function CompanyRequests() {
                 </form>
             )}
         </div>
-
     );
 }
