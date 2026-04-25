@@ -1,6 +1,6 @@
 from django.urls import path
 
-from .views import CompanyListCreateView, invite_member
+from .views import CompanyListCreateView, invite_member, my_role
 
 urlpatterns = [
     path("companies/", CompanyListCreateView.as_view(), name="company-list-create"),
