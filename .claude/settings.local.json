@@ -4,7 +4,9 @@
       "mcp__ide__getDiagnostics",
       "Bash(npx tsc:*)",
       "Bash(npx eslint:*)",
-      "Bash(npm install:*)"
+      "Bash(npm install:*)",
+      "Bash(grep -rn invite '/c/My Projects/approval-hub/companies/' --include=*.py)",
+      "Bash(xargs grep:*)"
     ]
   }
 }

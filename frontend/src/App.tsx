@@ -3,8 +3,8 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Verify from "./pages/Verify";
 import {Dashboard} from "./pages/Dashboard";
-import {CompanyRequests} from "./pages/CompanyRequests";
 import {Layout} from "./components/Layout";
+import CompanyRequests from "./pages/CompanyRequests";
 import InviteClaim from "./pages/InviteClaim";
 import ProtectedRoute from "./components/ProtectedRoute"
 
