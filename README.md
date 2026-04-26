@@ -1,6 +1,7 @@
 # Approval Hub
 
-An internal workflow tool that replaces WhatsApp messages and verbal approvals with a structured, auditable request system. Employees submit requests, managers approve or reject them. With a full audit trail of every action.
+An internal workflow tool that replaces WhatsApp messages and verbal approvals with a structured, auditable request
+system. Employees submit requests, managers approve or reject them. With a full audit trail of every action.
 
 **Live demo:** https://approvalhub.ch
 

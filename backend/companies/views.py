@@ -13,6 +13,7 @@ from .serializers import CompanySerializer
 
 resend.api_key = config('RESEND_API_KEY')
 
+
 class CompanyListCreateView(ListCreateAPIView):
     permission_classes = [IsAuthenticated]
     serializer_class = CompanySerializer

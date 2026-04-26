@@ -6,14 +6,14 @@ export default function Login() {
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
 
-    const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         try {
             const res = await client.post("/token/", {email, password});
             localStorage.setItem("access_token", res.data.access);
             localStorage.setItem("refresh_token", res.data.refresh);
             window.location.href = "/";
-        } catch (err) {
+        } catch (_err) {
             setError("Wrong email or password");
         }
     };
@@ -40,9 +40,8 @@ export default function Login() {
                 <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Login
                 </button>
                 <div className="flex flex-row items-center justify-center mt-2 my-0">
-                    <a className="hover:underline" href="/register">
-                        <a>Don't have an account?</a>
-                        <a>Register</a>
+                    <a className="hover:underline text-sm text-gray-600" href="/register">
+                        Don't have an account? Register
                     </a>
                 </div>
             </form>

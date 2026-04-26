@@ -1,76 +1,103 @@
-import * as React from "react";
-import {useEffect, useState} from "react";
-import client from "../api/client";
-import { User } from "../types"
+import {NavLink, Outlet} from 'react-router-dom'
+import {Building2, LayoutDashboard, LogOut, User} from 'lucide-react'
+import {cn} from '@/lib/utils'
 
-export default function Layout({children}: { children: React.ReactNode }) {
-    const [sidebarOpen, setSidebarOpen] = useState(true);
-    const [user, setUser] = useState<User | null>(null);
+const navigation = [
+    {name: 'Dashboard', href: '/', icon: LayoutDashboard},
+]
 
-    useEffect(() => {
-        client.get("/me/").then((res) => setUser(res.data)).catch(console.error);
-    }, []);
-
-    const handleLogout = () => {
-        localStorage.removeItem("access_token");
-        localStorage.removeItem("refresh_token");
-        window.location.href = "/login";
-    };
-
+export function Layout() {
     return (
-        <div className="flex min-h-screen">
-            {/* Sidebar */}
-            <div
-                className={`${
-                    sidebarOpen ? "w-64 p-4" : "w-0 p-0"
-                } bg-gray-800 text-white transition-all border-t border-gray-600 duration-300 flex flex-col overflow-hidden`}
-            >
-                {sidebarOpen && (
-                    <>
-                        {/* top part of */}
-                        <div className="flex-1">
-                            <a href="/" className="block mb-4 hover:text-gray-400 font-bold">
-                                Approval Hub
-                            </a>
-                            <nav>
-                                <a href="/" className="block py-2 border-t border-gray-600 hover:text-gray-300">
-                                    My Companies
-                                </a>
-                            </nav>
+        <div className="min-h-screen bg-slate-50">
+            {/* Desktop Sidebar */}
+            <aside
+                className="fixed left-0 top-0 z-40 hidden h-screen w-64 flex-col border-r border-slate-200 bg-[#0f172a] md:flex">
+                <div className="flex h-16 items-center px-6">
+                    <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-white">
+                            <Building2 className="h-5 w-5 text-[#0f172a]"/>
                         </div>
+                        <span className="text-lg font-semibold text-white">ApprovalHub</span>
+                    </div>
+                </div>
 
-                        {/* bottom part of side bar */}
-                        {user && (
-                            <div className="border-t border-gray-700 pt-4 pb-2">
-                                <div className="flex items-center space-x-3 mb-3">
-                                    <div
-                                        className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-xs">
-                                        {user?.first_name?.[0]}
-                                    </div>
-                                    <p className="text-sm font-medium">{user.first_name}</p>
-                                </div>
-                                <button
-                                    onClick={handleLogout}
-                                    className="w-full text-left text-sm text-red-400 hover:text-red-300 transition-colors"
-                                >
-                                    Logout
-                                </button>
-                            </div>
-                        )}
-                    </>
-                )}
-            </div>
+                <nav className="flex-1 px-3 py-4">
+                    {navigation.map((item) => (
+                        <NavLink
+                            key={item.name}
+                            to={item.href}
+                            className={({isActive}) =>
+                                cn(
+                                    'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                                    isActive
+                                        ? 'bg-white/10 text-white'
+                                        : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                                )
+                            }
+                        >
+                            <item.icon className="h-5 w-5"/>
+                            {item.name}
+                        </NavLink>
+                    ))}
+                </nav>
+
+                <div className="border-t border-slate-700 p-4">
+                    <div className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-600">
+                            <User className="h-5 w-5 text-white"/>
+                        </div>
+                        <div className="flex-1">
+                            <p className="text-sm font-medium text-white">John Doe</p>
+                            <p className="text-xs text-slate-400">Admin</p>
+                        </div>
+                        <button className="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white">
+                            <LogOut className="h-4 w-4"/>
+                        </button>
+                    </div>
+                </div>
+            </aside>
+
+            {/* Mobile Header */}
+            <header
+                className="fixed left-0 right-0 top-0 z-40 flex h-14 items-center border-b border-slate-200 bg-white px-4 md:hidden">
+                <div className="flex items-center gap-2">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#0f172a]">
+                        <Building2 className="h-5 w-5 text-white"/>
+                    </div>
+                    <span className="text-lg font-semibold text-slate-900">ApprovalHub</span>
+                </div>
+            </header>
 
             {/* Main Content */}
-            <div className="flex-1 bg-gray-100 p-8">
-                <button
-                    className="mb-4 text-2xl hover:text-gray-600"
-                    onClick={() => setSidebarOpen(!sidebarOpen)}
+            <main className="min-h-screen pb-20 pt-14 md:pb-0 md:pl-64 md:pt-0">
+                <div className="p-4 md:p-8">
+                    <Outlet/>
+                </div>
+            </main>
+
+            {/* Mobile Bottom Navigation */}
+            <nav
+                className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-200 bg-white md:hidden">
+                <NavLink
+                    to="/"
+                    className={({isActive}) =>
+                        cn(
+                            'flex h-11 w-11 flex-col items-center justify-center rounded-lg transition-colors',
+                            isActive ? 'text-[#0f172a]' : 'text-slate-500'
+                        )
+                    }
                 >
-                    ☰
-                </button>
-                {children}
-            </div>
+                    <Building2 className="h-6 w-6"/>
+                    <span className="mt-0.5 text-[10px] font-medium">Companies</span>
+                </NavLink>
+                <NavLink
+                    to="#profile"
+                    className="flex h-11 w-11 flex-col items-center justify-center rounded-lg text-slate-500 transition-colors"
+                >
+                    <User className="h-6 w-6"/>
+                    <span className="mt-0.5 text-[10px] font-medium">Profile</span>
+                </NavLink>
+            </nav>
         </div>
-    );
+    )
 }

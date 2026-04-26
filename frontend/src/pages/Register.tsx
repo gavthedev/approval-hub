@@ -22,7 +22,7 @@ export default function Register() {
             setTimeout(() => {
                 window.location.href = "/login";
             }, 2000);
-        } catch (err) {
+        } catch (_err) {
             setError("Something went wrong. Please try again.");
         }
     };

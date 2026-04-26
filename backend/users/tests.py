@@ -1,7 +1,7 @@
 import pytest
-from users.models import User
-from companies.models import Company, Membership
 from approvals.models import Request
+from companies.models import Company, Membership
+from users.models import User
 
 
 @pytest.mark.django_db

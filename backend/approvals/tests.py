@@ -1,9 +1,9 @@
 import pytest
-from users.models import User
-from companies.models import Company
 from approvals.models import Request
+from companies.models import Company
 from companies.models import Membership
 from rest_framework.test import APIClient
+from users.models import User
 
 
 @pytest.mark.django_db

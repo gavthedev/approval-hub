@@ -11,6 +11,7 @@ from .models import User, EmailConfirmation
 
 resend.api_key = config('RESEND_API_KEY')
 
+
 @api_view(["GET"])
 @permission_classes([IsAuthenticated])
 def me(request):
