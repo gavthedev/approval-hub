@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import {useNavigate, useParams} from 'react-router-dom'
 import {ArrowLeft, Check, Plus, UserPlus, X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
@@ -42,6 +42,24 @@ export default function CompanyRequests() {
     const [showInviteForm, setShowInviteForm] = useState(false)
     const [newRequest, setNewRequest] = useState({title: '', category: '', description: ''})
     const [inviteForm, setInviteForm] = useState({email: '', firstName: '', lastName: '', role: '', dateOfBirth: ''})
+    const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+    const notifTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    const notify = (type: 'success' | 'error', message: string) => {
+        if (notifTimer.current) clearTimeout(notifTimer.current)
+        setNotification({type, message})
+        notifTimer.current = setTimeout(() => setNotification(null), 4000)
+    }
+
+    const apiError = (err: unknown): string => {
+        const data = (err as { response?: { data?: Record<string, unknown> } })?.response?.data
+        if (data) {
+            const first = Object.values(data)[0]
+            if (typeof first === 'string') return first
+            if (Array.isArray(first) && typeof first[0] === 'string') return first[0]
+        }
+        return 'Something went wrong. Please try again.'
+    }
 
     useEffect(() => {
         client.get(`/companies/${slug}/requests/`).then((res) => {
@@ -65,8 +83,9 @@ export default function CompanyRequests() {
             setRequests([res.data, ...requests])
             setNewRequest({title: '', category: '', description: ''})
             setShowNewRequestForm(false)
+            notify('success', 'Request submitted successfully.')
         } catch (err) {
-            console.error(err)
+            notify('error', apiError(err))
         }
     }
 
@@ -82,8 +101,9 @@ export default function CompanyRequests() {
             })
             setInviteForm({email: '', firstName: '', lastName: '', role: '', dateOfBirth: ''})
             setShowInviteForm(false)
+            notify('success', 'Invitation sent successfully.')
         } catch (err) {
-            console.error(err)
+            notify('error', apiError(err))
         }
     }
 
@@ -93,7 +113,7 @@ export default function CompanyRequests() {
             const res = await client.get(`/companies/${slug}/requests/`)
             setRequests(res.data)
         } catch (err) {
-            console.error(err)
+            notify('error', apiError(err))
         }
     }
 
@@ -103,7 +123,7 @@ export default function CompanyRequests() {
             const res = await client.get(`/companies/${slug}/requests/`)
             setRequests(res.data)
         } catch (err) {
-            console.error(err)
+            notify('error', apiError(err))
         }
     }
 
@@ -113,12 +133,26 @@ export default function CompanyRequests() {
             const res = await client.get(`/companies/${slug}/requests/`)
             setRequests(res.data)
         } catch (err) {
-            console.error(err)
+            notify('error', apiError(err))
         }
     }
 
     return (
         <div className="mx-auto max-w-3xl">
+            {notification && (
+                <div className={cn(
+                    'mb-4 flex items-center justify-between rounded-md border px-4 py-3 text-sm',
+                    notification.type === 'success'
+                        ? 'border-green-200 bg-green-50 text-green-800'
+                        : 'border-red-200 bg-red-50 text-red-800'
+                )}>
+                    <span>{notification.message}</span>
+                    <button onClick={() => setNotification(null)}
+                            className="ml-4 shrink-0 opacity-60 hover:opacity-100">
+                        <X className="h-4 w-4"/>
+                    </button>
+                </div>
+            )}
             <div className="mb-6">
                 <button onClick={() => navigate('/')}
                         className="mb-4 flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900">
