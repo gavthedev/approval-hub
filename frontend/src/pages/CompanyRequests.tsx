@@ -284,23 +284,23 @@ export default function CompanyRequests() {
                                     )}
                                 </div>
                                 <div className="flex shrink-0 gap-2">
-                                    {request.status === 'submitted' && (
+                                    {request.status === 'submitted' && (myRole === 'admin' || myRole === 'approver') && (
                                         <Button size="sm" variant="outline" onClick={() => handleReview(request.id)}
                                                 className="border-yellow-300 bg-yellow-50 text-yellow-700 hover:bg-yellow-100">
                                             Review
                                         </Button>
                                     )}
-                                    {request.status === 'in_review' && (
+                                    {request.status === 'in_review' && (myRole === 'admin' || myRole === 'approver') && (
                                         <>
                                             <Button size="sm" onClick={() => handleApprove(request.id)}
                                                     className="bg-green-600 hover:bg-green-700">
                                                 <Check className="h-4 w-4"/>
-                                                <span className="hidden sm:inline ml-1">Approve</span>
+                                                <span className="ml-1">Approve</span>
                                             </Button>
                                             <Button size="sm" variant="destructive"
                                                     onClick={() => handleReject(request.id)}>
                                                 <X className="h-4 w-4"/>
-                                                <span className="hidden sm:inline ml-1">Reject</span>
+                                                <span className="ml-1">Reject</span>
                                             </Button>
                                         </>
                                     )}
