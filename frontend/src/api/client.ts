@@ -1,10 +1,10 @@
 import axios from "axios";
 
-const client = axios.create({
-    baseURL: import.meta.env.VITE_API_URL,
-});
+const BASE_URL = import.meta.env.VITE_API_URL;
 
-const address = import.meta.env.VITE_API_BASE
+const client = axios.create({
+    baseURL: BASE_URL,
+});
 
 client.interceptors.request.use((config) => {
     const token = localStorage.getItem("access_token");
@@ -17,7 +17,11 @@ client.interceptors.request.use((config) => {
 client.interceptors.response.use(
     (response) => response,
     async (error) => {
-        if (error.response?.status === 401) {
+        const originalRequest = error.config;
+
+        if (error.response?.status === 401 && !originalRequest._retry) {
+            originalRequest._retry = true;
+
             const refresh_token = localStorage.getItem("refresh_token");
 
             if (!refresh_token) {
@@ -26,13 +30,13 @@ client.interceptors.response.use(
             }
 
             try {
-                const res = await axios.post(`${address}/api/token/refresh/`, {
+                const res = await axios.post(`${BASE_URL}/api/token/refresh/`, {
                     refresh: refresh_token
                 });
 
-                localStorage.setItem("access_token", res.data.access)
+                localStorage.setItem("access_token", res.data.access);
 
-                return client(error.config)
+                return client(originalRequest);
             } catch {
                 localStorage.removeItem("access_token");
                 localStorage.removeItem("refresh_token");
