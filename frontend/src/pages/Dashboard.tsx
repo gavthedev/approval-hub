@@ -1,4 +1,4 @@
-import {useEffect, useState} from 'react'
+import {useEffect, useRef, useState} from 'react'
 import {useNavigate} from 'react-router-dom'
 import {Building2, ChevronRight, Plus, X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
@@ -19,6 +19,24 @@ export function Dashboard() {
     const [companies, setCompanies] = useState<Company[]>([])
     const [showNewForm, setShowNewForm] = useState(false)
     const [newCompanyName, setNewCompanyName] = useState('')
+    const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
+    const notifTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+    const notify = (type: 'success' | 'error', message: string) => {
+        if (notifTimer.current) clearTimeout(notifTimer.current)
+        setNotification({type, message})
+        notifTimer.current = setTimeout(() => setNotification(null), 4000)
+    }
+
+    const apiError = (err: unknown): string => {
+        const data = (err as { response?: { data?: Record<string, unknown> } })?.response?.data
+        if (data) {
+            const first = Object.values(data)[0]
+            if (typeof first === 'string') return first
+            if (Array.isArray(first) && typeof first[0] === 'string') return first[0]
+        }
+        return 'Something went wrong. Please try again.'
+    }
 
     useEffect(() => {
         client.get('/companies/').then((res) => {
@@ -35,7 +53,7 @@ export function Dashboard() {
             setNewCompanyName('')
             setShowNewForm(false)
         } catch (err) {
-            console.error(err)
+            notify('error', apiError(err))
         }
     }
 
@@ -45,6 +63,20 @@ export function Dashboard() {
 
     return (
         <div className="mx-auto max-w-3xl">
+            {notification && (
+                <div className={cn(
+                    'mb-4 flex items-center justify-between rounded-md border px-4 py-3 text-sm',
+                    notification.type === 'success'
+                        ? 'border-green-200 bg-green-50 text-green-800'
+                        : 'border-red-200 bg-red-50 text-red-800'
+                )}>
+                    <span>{notification.message}</span>
+                    <button onClick={() => setNotification(null)}
+                            className="ml-4 shrink-0 opacity-60 hover:opacity-100">
+                        <X className="h-4 w-4"/>
+                    </button>
+                </div>
+            )}
             <div className="mb-6 flex items-center justify-between">
                 <h1 className="text-2xl font-semibold text-slate-900">Companies</h1>
                 {!showNewForm && (

@@ -245,13 +245,13 @@ export default function CompanyRequests() {
                                     <Label htmlFor="firstName">First Name</Label>
                                     <Input id="firstName" value={inviteForm.firstName}
                                            onChange={(e) => setInviteForm({...inviteForm, firstName: e.target.value})}
-                                           placeholder="John" className="mt-1.5"/>
+                                           placeholder="Alex" className="mt-1.5"/>
                                 </div>
                                 <div>
                                     <Label htmlFor="lastName">Last Name</Label>
                                     <Input id="lastName" value={inviteForm.lastName}
                                            onChange={(e) => setInviteForm({...inviteForm, lastName: e.target.value})}
-                                           placeholder="Doe" className="mt-1.5"/>
+                                           placeholder="Pereira" className="mt-1.5"/>
                                 </div>
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2">
