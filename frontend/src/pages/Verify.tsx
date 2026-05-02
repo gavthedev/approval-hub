@@ -1,8 +1,9 @@
 import {useEffect, useState} from "react";
-import {useParams} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 import client from "../api/client";
 
 export default function Verify() {
+    const navigate = useNavigate();
     const {token} = useParams();
     const [message, setMessage] = useState("");
     const [error, setError] = useState("");
@@ -11,9 +12,7 @@ export default function Verify() {
         client.get(`/verify/${token}/`)
             .then((res) => {
                 setMessage(res.data.message);
-                setTimeout(() => {
-                    window.location.href = "/login";
-                }, 3000);
+                setTimeout(() => navigate("/login"), 3000);
             })
             .catch((err) => {
                 setError(err.response?.data?.error || "Something went wrong.");

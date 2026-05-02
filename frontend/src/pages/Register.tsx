@@ -1,10 +1,12 @@
 import {useState} from "react";
+import {useNavigate} from "react-router-dom";
 import client from "../api/client";
 
 export default function Register() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
+    const navigate = useNavigate();
     const [error, setError] = useState("");
     const [message, setMessage] = useState("");
 
@@ -19,9 +21,7 @@ export default function Register() {
         try {
             const res = await client.post("/register/", {email, password});
             setMessage(res.data.message);
-            setTimeout(() => {
-                window.location.href = "/login";
-            }, 2000);
+            setTimeout(() => navigate("/login"), 2000);
         } catch (_err) {
             setError("Something went wrong. Please try again.");
         }

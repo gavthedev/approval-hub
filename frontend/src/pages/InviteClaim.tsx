@@ -1,8 +1,9 @@
 import {useState} from 'react'
-import {useParams} from 'react-router-dom'
+import {useNavigate, useParams} from 'react-router-dom'
 import client from '../api/client'
 
 export default function InviteClaim() {
+    const navigate = useNavigate()
     const {token} = useParams()
     const [password, setPassword] = useState('')
     const [dateOfBirth, setDateOfBirth] = useState('')
@@ -17,9 +18,7 @@ export default function InviteClaim() {
                 date_of_birth: dateOfBirth,
             })
             setMessage(res.data.message)
-            setTimeout(() => {
-                window.location.href = '/login'
-            }, 2000)
+            setTimeout(() => navigate('/login'), 2000)
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
             setError(msg || 'Something went wrong. Please try again.')
