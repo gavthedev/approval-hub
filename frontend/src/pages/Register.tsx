@@ -9,6 +9,7 @@ export default function Register() {
     const navigate = useNavigate();
     const [error, setError] = useState("");
     const [message, setMessage] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.SyntheticEvent) => {
         e.preventDefault();
@@ -18,12 +19,14 @@ export default function Register() {
             return;
         }
 
+        setLoading(true);
         try {
             const res = await client.post("/register/", {email, password});
             setMessage(res.data.message);
             setTimeout(() => navigate("/login"), 2000);
         } catch (_err) {
             setError("Something went wrong. Please try again.");
+            setLoading(false);
         }
     };
 
@@ -51,8 +54,9 @@ export default function Register() {
                        value={confirmPassword}
                        onChange={(e) => setConfirmPassword(e.target.value)}
                 />
-                <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
-                    Register
+                <button type="submit" disabled={loading}
+                        className={`w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                    {loading ? 'Creating account...' : 'Register'}
                 </button>
                 <div className="flex justify-center mt-4">
                     <a href="/login" className="hover:underline text-sm text-gray-600">

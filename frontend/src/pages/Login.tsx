@@ -7,9 +7,11 @@ export default function Login() {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+    const [loading, setLoading] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+        setLoading(true);
         try {
             const res = await client.post("/token/", {email, password});
             localStorage.setItem("access_token", res.data.access);
@@ -17,6 +19,7 @@ export default function Login() {
             navigate("/");
         } catch (_err) {
             setError("Wrong email or password");
+            setLoading(false);
         }
     };
 
@@ -39,7 +42,9 @@ export default function Login() {
                        onChange={(e) => setPassword(e.target.value)}
                 />
                 <br/>
-                <button type="submit" className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">Login
+                <button type="submit" disabled={loading}
+                        className={`w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                    {loading ? 'Logging in...' : 'Login'}
                 </button>
                 <div className="flex flex-row items-center justify-center mt-2 my-0">
                     <a className="hover:underline text-sm text-gray-600" href="/register">

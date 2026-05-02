@@ -9,9 +9,11 @@ export default function InviteClaim() {
     const [dateOfBirth, setDateOfBirth] = useState('')
     const [message, setMessage] = useState('')
     const [error, setError] = useState('')
+    const [loading, setLoading] = useState(false)
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        setLoading(true)
         try {
             const res = await client.post(`/invite/${token}/claim/`, {
                 password,
@@ -22,6 +24,7 @@ export default function InviteClaim() {
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
             setError(msg || 'Something went wrong. Please try again.')
+            setLoading(false)
         }
     }
 
@@ -56,9 +59,9 @@ export default function InviteClaim() {
                             onChange={(e) => setPassword(e.target.value)}
                             required
                         />
-                        <button type="submit"
-                                className="w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700">
-                            Activate Account
+                        <button type="submit" disabled={loading}
+                                className={`w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                            {loading ? 'Activating...' : 'Activate Account'}
                         </button>
                     </>
                 )}

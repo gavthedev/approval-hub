@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from 'react'
 import {useNavigate} from 'react-router-dom'
-import {Building2, ChevronRight, Plus, X} from 'lucide-react'
+import {Building2, ChevronRight, Loader2, Plus, X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Card, CardContent} from '@/components/ui/card'
 import {Input} from '@/components/ui/input'
@@ -19,6 +19,7 @@ export function Dashboard() {
     const [companies, setCompanies] = useState<Company[]>([])
     const [showNewForm, setShowNewForm] = useState(false)
     const [newCompanyName, setNewCompanyName] = useState('')
+    const [loading, setLoading] = useState(false)
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
     const notifTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -47,6 +48,7 @@ export function Dashboard() {
     const handleAddCompany = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!newCompanyName.trim()) return
+        setLoading(true)
         try {
             const res = await client.post('/companies/', {name: newCompanyName.trim()})
             setCompanies([...companies, res.data])
@@ -54,6 +56,8 @@ export function Dashboard() {
             setShowNewForm(false)
         } catch (err) {
             notify('error', apiError(err))
+        } finally {
+            setLoading(false)
         }
     }
 
@@ -104,7 +108,10 @@ export function Dashboard() {
                                 />
                             </div>
                             <div className="flex gap-2 sm:flex-shrink-0">
-                                <Button type="submit" size="sm" className="flex-1 sm:flex-initial">Add</Button>
+                                <Button type="submit" size="sm" disabled={loading} className="flex-1 sm:flex-initial">
+                                    {loading && <Loader2 className="h-4 w-4 animate-spin"/>}
+                                    {loading ? 'Adding...' : 'Add'}
+                                </Button>
                                 <Button type="button" variant="outline" size="sm"
                                         onClick={() => {
                                             setShowNewForm(false);

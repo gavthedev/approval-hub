@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from 'react'
 import {useNavigate, useParams} from 'react-router-dom'
-import {ArrowLeft, Check, Plus, UserPlus, X} from 'lucide-react'
+import {ArrowLeft, Check, Loader2, Plus, UserPlus, X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
 import {Input} from '@/components/ui/input'
@@ -42,6 +42,9 @@ export default function CompanyRequests() {
     const [showInviteForm, setShowInviteForm] = useState(false)
     const [newRequest, setNewRequest] = useState({title: '', category: '', description: ''})
     const [inviteForm, setInviteForm] = useState({email: '', firstName: '', lastName: '', role: '', dateOfBirth: ''})
+    const [submittingRequest, setSubmittingRequest] = useState(false)
+    const [submittingInvite, setSubmittingInvite] = useState(false)
+    const [actioningId, setActioningId] = useState<number | null>(null)
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
     const notifTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -78,6 +81,7 @@ export default function CompanyRequests() {
 
     const handleAddRequest = async (e: React.FormEvent) => {
         e.preventDefault()
+        setSubmittingRequest(true)
         try {
             const res = await client.post(`/companies/${slug}/requests/`, newRequest)
             setRequests([res.data, ...requests])
@@ -86,11 +90,14 @@ export default function CompanyRequests() {
             notify('success', 'Request submitted successfully.')
         } catch (err) {
             notify('error', apiError(err))
+        } finally {
+            setSubmittingRequest(false)
         }
     }
 
     const handleInviteMember = async (e: React.FormEvent) => {
         e.preventDefault()
+        setSubmittingInvite(true)
         try {
             await client.post(`/companies/${slug}/invite/`, {
                 email: inviteForm.email,
@@ -104,36 +111,47 @@ export default function CompanyRequests() {
             notify('success', 'Invitation sent successfully.')
         } catch (err) {
             notify('error', apiError(err))
+        } finally {
+            setSubmittingInvite(false)
         }
     }
 
     const handleReview = async (requestId: number) => {
+        setActioningId(requestId)
         try {
             await client.post(`/companies/${slug}/requests/${requestId}/review/`)
             const res = await client.get(`/companies/${slug}/requests/`)
             setRequests(res.data)
         } catch (err) {
             notify('error', apiError(err))
+        } finally {
+            setActioningId(null)
         }
     }
 
     const handleApprove = async (requestId: number) => {
+        setActioningId(requestId)
         try {
             await client.post(`/companies/${slug}/requests/${requestId}/approve/`, {decision: 'approved', comment: ''})
             const res = await client.get(`/companies/${slug}/requests/`)
             setRequests(res.data)
         } catch (err) {
             notify('error', apiError(err))
+        } finally {
+            setActioningId(null)
         }
     }
 
     const handleReject = async (requestId: number) => {
+        setActioningId(requestId)
         try {
             await client.post(`/companies/${slug}/requests/${requestId}/reject/`, {decision: 'rejected', comment: ''})
             const res = await client.get(`/companies/${slug}/requests/`)
             setRequests(res.data)
         } catch (err) {
             notify('error', apiError(err))
+        } finally {
+            setActioningId(null)
         }
     }
 
@@ -215,8 +233,11 @@ export default function CompanyRequests() {
                                           placeholder="Describe your request" className="mt-1.5" rows={3}/>
                             </div>
                             <div className="flex gap-2 sm:justify-end">
-                                <Button type="submit" size="sm" className="flex-1 sm:flex-initial">Submit
-                                    Request</Button>
+                                <Button type="submit" size="sm" disabled={submittingRequest}
+                                        className="flex-1 sm:flex-initial">
+                                    {submittingRequest && <Loader2 className="h-4 w-4 animate-spin"/>}
+                                    {submittingRequest ? 'Submitting...' : 'Submit Request'}
+                                </Button>
                                 <Button type="button" variant="outline" size="sm"
                                         onClick={() => {
                                             setShowNewRequestForm(false)
@@ -277,9 +298,10 @@ export default function CompanyRequests() {
                                 </div>
                             </div>
                             <div className="flex gap-2 sm:justify-end">
-                                <Button type="submit" size="sm"
+                                <Button type="submit" size="sm" disabled={submittingInvite}
                                         className="flex-1 sm:flex-initial bg-green-600 hover:bg-green-700">
-                                    Send Invitation
+                                    {submittingInvite && <Loader2 className="h-4 w-4 animate-spin"/>}
+                                    {submittingInvite ? 'Sending...' : 'Send Invitation'}
                                 </Button>
                                 <Button type="button" variant="outline" size="sm"
                                         onClick={() => {
@@ -320,20 +342,29 @@ export default function CompanyRequests() {
                                 <div className="flex shrink-0 gap-2">
                                     {request.status === 'submitted' && (myRole === 'admin' || myRole === 'approver') && (
                                         <Button size="sm" variant="outline" onClick={() => handleReview(request.id)}
+                                                disabled={actioningId === request.id}
                                                 className="border-yellow-300 bg-yellow-50 text-yellow-700 hover:bg-yellow-100">
-                                            Review
+                                            {actioningId === request.id
+                                                ? <Loader2 className="h-4 w-4 animate-spin"/>
+                                                : 'Review'}
                                         </Button>
                                     )}
                                     {request.status === 'in_review' && (myRole === 'admin' || myRole === 'approver') && (
                                         <>
                                             <Button size="sm" onClick={() => handleApprove(request.id)}
+                                                    disabled={actioningId === request.id}
                                                     className="bg-green-600 hover:bg-green-700">
-                                                <Check className="h-4 w-4"/>
+                                                {actioningId === request.id
+                                                    ? <Loader2 className="h-4 w-4 animate-spin"/>
+                                                    : <Check className="h-4 w-4"/>}
                                                 <span className="ml-1">Approve</span>
                                             </Button>
                                             <Button size="sm" variant="destructive"
-                                                    onClick={() => handleReject(request.id)}>
-                                                <X className="h-4 w-4"/>
+                                                    onClick={() => handleReject(request.id)}
+                                                    disabled={actioningId === request.id}>
+                                                {actioningId === request.id
+                                                    ? <Loader2 className="h-4 w-4 animate-spin"/>
+                                                    : <X className="h-4 w-4"/>}
                                                 <span className="ml-1">Reject</span>
                                             </Button>
                                         </>
