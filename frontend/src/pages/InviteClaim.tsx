@@ -1,5 +1,8 @@
 import {useState} from 'react'
 import {useNavigate, useParams} from 'react-router-dom'
+import {Button} from '@/components/ui/button'
+import {Input} from '@/components/ui/input'
+import {Label} from '@/components/ui/label'
 import client from '../api/client'
 
 export default function InviteClaim() {
@@ -33,37 +36,32 @@ export default function InviteClaim() {
             <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow-md w-96">
                 <h1 className="text-2xl font-bold mb-2">Accept Invitation</h1>
                 <p className="text-gray-500 text-sm mb-6">Set your password to activate your account.</p>
-                {error && <p className="text-red-500 mb-4">{error}</p>}
+                {error && <p className="text-red-500 mb-4 text-sm">{error}</p>}
                 {message && (
                     <>
-                        <p className="text-green-500 mb-2">{message}</p>
+                        <p className="text-green-600 mb-2 text-sm">{message}</p>
                         <p className="text-gray-500 text-sm">Redirecting to login...</p>
                     </>
                 )}
                 {!message && (
-                    <>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Date of Birth</label>
-                        <input
-                            className="w-full p-2 border rounded mb-4"
-                            type="date"
-                            value={dateOfBirth}
-                            onChange={(e) => setDateOfBirth(e.target.value)}
-                            required
-                        />
-                        <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
-                        <input
-                            className="w-full p-2 border rounded mb-6"
-                            type="password"
-                            placeholder="Choose a password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
-                        <button type="submit" disabled={loading}
-                                className={`w-full bg-blue-600 text-white p-2 rounded hover:bg-blue-700 ${loading ? 'opacity-60 cursor-not-allowed' : ''}`}>
+                    <div className="flex flex-col gap-4">
+                        <div>
+                            <Label htmlFor="dateOfBirth">Date of Birth</Label>
+                            <Input id="dateOfBirth" type="date" value={dateOfBirth}
+                                   onChange={(e) => setDateOfBirth(e.target.value)}
+                                   className="mt-1.5" required/>
+                        </div>
+                        <div>
+                            <Label htmlFor="password">New Password</Label>
+                            <Input id="password" type="password" placeholder="Choose a password"
+                                   value={password}
+                                   onChange={(e) => setPassword(e.target.value)}
+                                   className="mt-1.5" required/>
+                        </div>
+                        <Button type="submit" disabled={loading} className="w-full">
                             {loading ? 'Activating...' : 'Activate Account'}
-                        </button>
-                    </>
+                        </Button>
+                    </div>
                 )}
             </form>
         </div>
