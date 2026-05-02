@@ -33,6 +33,14 @@ export default function CompanyRequests() {
     const [showInviteForm, setShowInviteForm] = useState(false)
     const [newRequest, setNewRequest] = useState({title: '', category: '', description: ''})
     const [inviteForm, setInviteForm] = useState({email: '', firstName: '', lastName: '', role: '', dateOfBirth: ''})
+    const [requestErrors, setRequestErrors] = useState<{ title?: string; category?: string }>({})
+    const [inviteErrors, setInviteErrors] = useState<{
+        email?: string;
+        firstName?: string;
+        lastName?: string;
+        role?: string;
+        dateOfBirth?: string
+    }>({})
     const [submittingRequest, setSubmittingRequest] = useState(false)
     const [submittingInvite, setSubmittingInvite] = useState(false)
     const [actioningId, setActioningId] = useState<number | null>(null)
@@ -43,6 +51,27 @@ export default function CompanyRequests() {
         if (notifTimer.current) clearTimeout(notifTimer.current)
         setNotification({type, message})
         notifTimer.current = setTimeout(() => setNotification(null), 4000)
+    }
+
+    const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+    const validateRequest = () => {
+        const e: typeof requestErrors = {}
+        if (!newRequest.title.trim()) e.title = 'Title is required'
+        if (!newRequest.category) e.category = 'Category is required'
+        return e
+    }
+
+    const validateInvite = () => {
+        const e: typeof inviteErrors = {}
+        if (!inviteForm.email) e.email = 'Email is required'
+        else if (!EMAIL_RE.test(inviteForm.email)) e.email = 'Enter a valid email address'
+        if (!inviteForm.firstName.trim()) e.firstName = 'First name is required'
+        if (!inviteForm.lastName.trim()) e.lastName = 'Last name is required'
+        if (!inviteForm.role) e.role = 'Role is required'
+        if (!inviteForm.dateOfBirth) e.dateOfBirth = 'Date of birth is required'
+        else if (new Date(inviteForm.dateOfBirth) >= new Date()) e.dateOfBirth = 'Date of birth must be in the past'
+        return e
     }
 
     const apiError = (err: unknown): string => {
@@ -72,6 +101,12 @@ export default function CompanyRequests() {
 
     const handleAddRequest = async (e: React.FormEvent) => {
         e.preventDefault()
+        const v = validateRequest()
+        if (Object.keys(v).length) {
+            setRequestErrors(v);
+            return
+        }
+        setRequestErrors({})
         setSubmittingRequest(true)
         try {
             const res = await client.post(`/companies/${slug}/requests/`, newRequest)
@@ -88,6 +123,12 @@ export default function CompanyRequests() {
 
     const handleInviteMember = async (e: React.FormEvent) => {
         e.preventDefault()
+        const v = validateInvite()
+        if (Object.keys(v).length) {
+            setInviteErrors(v);
+            return
+        }
+        setInviteErrors({})
         setSubmittingInvite(true)
         try {
             await client.post(`/companies/${slug}/invite/`, {
@@ -196,17 +237,25 @@ export default function CompanyRequests() {
                 <Card className="mb-6 border-slate-200 bg-white shadow-sm">
                     <CardHeader className="pb-4"><CardTitle className="text-lg">New Request</CardTitle></CardHeader>
                     <CardContent>
-                        <form onSubmit={handleAddRequest} className="flex flex-col gap-4">
+                        <form onSubmit={handleAddRequest} noValidate className="flex flex-col gap-4">
                             <div>
                                 <Label htmlFor="requestTitle">Title</Label>
                                 <Input id="requestTitle" value={newRequest.title}
-                                       onChange={(e) => setNewRequest({...newRequest, title: e.target.value})}
+                                       onChange={(e) => {
+                                           setNewRequest({...newRequest, title: e.target.value});
+                                           setRequestErrors(p => ({...p, title: undefined}))
+                                       }}
                                        placeholder="Enter request title" className="mt-1.5" autoFocus/>
+                                {requestErrors.title &&
+                                    <p className="mt-1 text-xs text-red-600">{requestErrors.title}</p>}
                             </div>
                             <div>
                                 <Label htmlFor="requestCategory">Category</Label>
                                 <Select value={newRequest.category}
-                                        onValueChange={(value) => setNewRequest({...newRequest, category: value})}>
+                                        onValueChange={(value) => {
+                                            setNewRequest({...newRequest, category: value});
+                                            setRequestErrors(p => ({...p, category: undefined}))
+                                        }}>
                                     <SelectTrigger className="mt-1.5 w-full">
                                         <SelectValue placeholder="Select category"/>
                                     </SelectTrigger>
@@ -216,6 +265,8 @@ export default function CompanyRequests() {
                                         ))}
                                     </SelectContent>
                                 </Select>
+                                {requestErrors.category &&
+                                    <p className="mt-1 text-xs text-red-600">{requestErrors.category}</p>}
                             </div>
                             <div>
                                 <Label htmlFor="requestDescription">Description</Label>
@@ -233,6 +284,7 @@ export default function CompanyRequests() {
                                         onClick={() => {
                                             setShowNewRequestForm(false)
                                             setNewRequest({title: '', category: '', description: ''})
+                                            setRequestErrors({})
                                         }}
                                         className="flex-1 sm:flex-initial">Cancel</Button>
                             </div>
@@ -245,32 +297,50 @@ export default function CompanyRequests() {
                 <Card className="mb-6 border-slate-200 bg-white shadow-sm">
                     <CardHeader className="pb-4"><CardTitle className="text-lg">Invite Member</CardTitle></CardHeader>
                     <CardContent>
-                        <form onSubmit={handleInviteMember} className="flex flex-col gap-4">
+                        <form onSubmit={handleInviteMember} noValidate className="flex flex-col gap-4">
                             <div>
                                 <Label htmlFor="memberEmail">Email</Label>
                                 <Input id="memberEmail" type="email" value={inviteForm.email}
-                                       onChange={(e) => setInviteForm({...inviteForm, email: e.target.value})}
+                                       onChange={(e) => {
+                                           setInviteForm({...inviteForm, email: e.target.value});
+                                           setInviteErrors(p => ({...p, email: undefined}))
+                                       }}
                                        placeholder="email@example.com" className="mt-1.5" autoFocus/>
+                                {inviteErrors.email &&
+                                    <p className="mt-1 text-xs text-red-600">{inviteErrors.email}</p>}
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
                                     <Label htmlFor="firstName">First Name</Label>
                                     <Input id="firstName" value={inviteForm.firstName}
-                                           onChange={(e) => setInviteForm({...inviteForm, firstName: e.target.value})}
+                                           onChange={(e) => {
+                                               setInviteForm({...inviteForm, firstName: e.target.value});
+                                               setInviteErrors(p => ({...p, firstName: undefined}))
+                                           }}
                                            placeholder="Alex" className="mt-1.5"/>
+                                    {inviteErrors.firstName &&
+                                        <p className="mt-1 text-xs text-red-600">{inviteErrors.firstName}</p>}
                                 </div>
                                 <div>
                                     <Label htmlFor="lastName">Last Name</Label>
                                     <Input id="lastName" value={inviteForm.lastName}
-                                           onChange={(e) => setInviteForm({...inviteForm, lastName: e.target.value})}
+                                           onChange={(e) => {
+                                               setInviteForm({...inviteForm, lastName: e.target.value});
+                                               setInviteErrors(p => ({...p, lastName: undefined}))
+                                           }}
                                            placeholder="Pereira" className="mt-1.5"/>
+                                    {inviteErrors.lastName &&
+                                        <p className="mt-1 text-xs text-red-600">{inviteErrors.lastName}</p>}
                                 </div>
                             </div>
                             <div className="grid gap-4 sm:grid-cols-2">
                                 <div>
                                     <Label htmlFor="memberRole">Role</Label>
                                     <Select value={inviteForm.role}
-                                            onValueChange={(value) => setInviteForm({...inviteForm, role: value})}>
+                                            onValueChange={(value) => {
+                                                setInviteForm({...inviteForm, role: value});
+                                                setInviteErrors(p => ({...p, role: undefined}))
+                                            }}>
                                         <SelectTrigger className="mt-1.5 w-full">
                                             <SelectValue placeholder="Select role"/>
                                         </SelectTrigger>
@@ -280,12 +350,19 @@ export default function CompanyRequests() {
                                             ))}
                                         </SelectContent>
                                     </Select>
+                                    {inviteErrors.role &&
+                                        <p className="mt-1 text-xs text-red-600">{inviteErrors.role}</p>}
                                 </div>
                                 <div>
                                     <Label htmlFor="dateOfBirth">Date of Birth</Label>
                                     <Input id="dateOfBirth" type="date" value={inviteForm.dateOfBirth}
-                                           onChange={(e) => setInviteForm({...inviteForm, dateOfBirth: e.target.value})}
+                                           onChange={(e) => {
+                                               setInviteForm({...inviteForm, dateOfBirth: e.target.value});
+                                               setInviteErrors(p => ({...p, dateOfBirth: undefined}))
+                                           }}
                                            className="mt-1.5"/>
+                                    {inviteErrors.dateOfBirth &&
+                                        <p className="mt-1 text-xs text-red-600">{inviteErrors.dateOfBirth}</p>}
                                 </div>
                             </div>
                             <div className="flex gap-2 sm:justify-end">
@@ -304,6 +381,7 @@ export default function CompanyRequests() {
                                                 role: '',
                                                 dateOfBirth: ''
                                             })
+                                            setInviteErrors({})
                                         }}
                                         className="flex-1 sm:flex-initial">Cancel</Button>
                             </div>

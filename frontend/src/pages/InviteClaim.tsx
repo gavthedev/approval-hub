@@ -10,13 +10,29 @@ export default function InviteClaim() {
     const {token} = useParams()
     const [password, setPassword] = useState('')
     const [dateOfBirth, setDateOfBirth] = useState('')
+    const [errors, setErrors] = useState<{ dateOfBirth?: string; password?: string }>({})
     const [message, setMessage] = useState('')
-    const [error, setError] = useState('')
+    const [serverError, setServerError] = useState('')
     const [loading, setLoading] = useState(false)
+
+    const validate = () => {
+        const e: typeof errors = {}
+        if (!dateOfBirth) e.dateOfBirth = 'Date of birth is required'
+        else if (new Date(dateOfBirth) >= new Date()) e.dateOfBirth = 'Date of birth must be in the past'
+        if (!password) e.password = 'Password is required'
+        else if (password.length < 8) e.password = 'Password must be at least 8 characters'
+        return e
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
+        const v = validate()
+        if (Object.keys(v).length) {
+            setErrors(v);
+            return
+        }
         setLoading(true)
+        setServerError('')
         try {
             const res = await client.post(`/invite/${token}/claim/`, {
                 password,
@@ -26,17 +42,17 @@ export default function InviteClaim() {
             setTimeout(() => navigate('/login'), 2000)
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
-            setError(msg || 'Something went wrong. Please try again.')
+            setServerError(msg || 'Something went wrong. Please try again.')
             setLoading(false)
         }
     }
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
-            <form onSubmit={handleSubmit} className="bg-white p-8 rounded shadow-md w-96">
+            <form onSubmit={handleSubmit} noValidate className="bg-white p-8 rounded shadow-md w-96">
                 <h1 className="text-2xl font-bold mb-2">Accept Invitation</h1>
                 <p className="text-gray-500 text-sm mb-6">Set your password to activate your account.</p>
-                {error && <p className="text-red-500 mb-4 text-sm">{error}</p>}
+                {serverError && <p className="text-red-500 mb-4 text-sm">{serverError}</p>}
                 {message && (
                     <>
                         <p className="text-green-600 mb-2 text-sm">{message}</p>
@@ -48,15 +64,23 @@ export default function InviteClaim() {
                         <div>
                             <Label htmlFor="dateOfBirth">Date of Birth</Label>
                             <Input id="dateOfBirth" type="date" value={dateOfBirth}
-                                   onChange={(e) => setDateOfBirth(e.target.value)}
-                                   className="mt-1.5" required/>
+                                   onChange={(e) => {
+                                       setDateOfBirth(e.target.value);
+                                       setErrors(p => ({...p, dateOfBirth: undefined}))
+                                   }}
+                                   className="mt-1.5"/>
+                            {errors.dateOfBirth && <p className="mt-1 text-xs text-red-600">{errors.dateOfBirth}</p>}
                         </div>
                         <div>
                             <Label htmlFor="password">New Password</Label>
                             <Input id="password" type="password" placeholder="Choose a password"
                                    value={password}
-                                   onChange={(e) => setPassword(e.target.value)}
-                                   className="mt-1.5" required/>
+                                   onChange={(e) => {
+                                       setPassword(e.target.value);
+                                       setErrors(p => ({...p, password: undefined}))
+                                   }}
+                                   className="mt-1.5"/>
+                            {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
                         </div>
                         <Button type="submit" disabled={loading} className="w-full">
                             {loading ? 'Activating...' : 'Activate Account'}

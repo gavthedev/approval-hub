@@ -15,6 +15,7 @@ export function Dashboard() {
     const [showNewForm, setShowNewForm] = useState(false)
     const [newCompanyName, setNewCompanyName] = useState('')
     const [loading, setLoading] = useState(false)
+    const [nameError, setNameError] = useState('')
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
     const notifTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -42,7 +43,11 @@ export function Dashboard() {
 
     const handleAddCompany = async (e: React.FormEvent) => {
         e.preventDefault()
-        if (!newCompanyName.trim()) return
+        if (!newCompanyName.trim()) {
+            setNameError('Company name is required');
+            return
+        }
+        setNameError('')
         setLoading(true)
         try {
             const res = await client.post('/companies/', {name: newCompanyName.trim()})
@@ -90,17 +95,22 @@ export function Dashboard() {
             {showNewForm && (
                 <Card className="mb-6 border-slate-200 bg-white shadow-sm">
                     <CardContent className="pt-6">
-                        <form onSubmit={handleAddCompany} className="flex flex-col gap-4 sm:flex-row sm:items-end">
+                        <form onSubmit={handleAddCompany} noValidate
+                              className="flex flex-col gap-4 sm:flex-row sm:items-end">
                             <div className="flex-1">
                                 <Label htmlFor="companyName" className="text-slate-700">Company Name</Label>
                                 <Input
                                     id="companyName"
                                     value={newCompanyName}
-                                    onChange={(e) => setNewCompanyName(e.target.value)}
+                                    onChange={(e) => {
+                                        setNewCompanyName(e.target.value);
+                                        setNameError('')
+                                    }}
                                     placeholder="Enter company name"
                                     className="mt-1.5"
                                     autoFocus
                                 />
+                                {nameError && <p className="mt-1 text-xs text-red-600">{nameError}</p>}
                             </div>
                             <div className="flex gap-2 sm:flex-shrink-0">
                                 <Button type="submit" size="sm" disabled={loading} className="flex-1 sm:flex-initial">
@@ -110,7 +120,8 @@ export function Dashboard() {
                                 <Button type="button" variant="outline" size="sm"
                                         onClick={() => {
                                             setShowNewForm(false);
-                                            setNewCompanyName('')
+                                            setNewCompanyName('');
+                                            setNameError('');
                                         }}
                                         className="flex-1 sm:flex-initial">
                                     <X className="h-4 w-4 sm:mr-1.5"/>
