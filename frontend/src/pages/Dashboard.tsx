@@ -7,12 +7,7 @@ import {Input} from '@/components/ui/input'
 import {Label} from '@/components/ui/label'
 import {cn} from '@/lib/utils'
 import client from '@/api/client'
-
-interface Company {
-    id: string
-    name: string
-    slug: string
-}
+import type {Company} from '@/types'
 
 export function Dashboard() {
     const navigate = useNavigate()

@@ -10,16 +10,7 @@ import {Textarea} from '@/components/ui/textarea'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select'
 import {cn} from '@/lib/utils'
 import client from '@/api/client'
-
-type RequestStatus = 'submitted' | 'in_review' | 'approved' | 'rejected'
-
-interface Request {
-    id: number
-    title: string
-    status: RequestStatus
-    category: string
-    description: string
-}
+import type {Request, RequestStatus} from '@/types'
 
 const categories = ['freezer', 'pos', 'oven', 'uniform', 'laptop', 'other']
 const roles = ['member', 'approver', 'admin']

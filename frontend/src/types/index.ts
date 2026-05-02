@@ -13,6 +13,8 @@ export interface Company {
     created_at: string;
 }
 
+export type RequestStatus = 'submitted' | 'in_review' | 'approved' | 'rejected'
+
 export interface Request {
     id: number;
     title: string;
@@ -20,7 +22,7 @@ export interface Request {
     severity: string;
     location: string;
     description: string;
-    status: string;
+    status: RequestStatus;
     company: number;
     created_by: number;
     created_at: string;
