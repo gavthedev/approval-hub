@@ -107,12 +107,14 @@ export default function CompanyRequests() {
         }
     }
 
+    const updateRequestStatus = (requestId: number, status: RequestStatus) =>
+        setRequests(prev => prev.map(r => r.id === requestId ? {...r, status} : r))
+
     const handleReview = async (requestId: number) => {
         setActioningId(requestId)
         try {
             await client.post(`/companies/${slug}/requests/${requestId}/review/`)
-            const res = await client.get(`/companies/${slug}/requests/`)
-            setRequests(res.data)
+            updateRequestStatus(requestId, 'in_review')
         } catch (err) {
             notify('error', apiError(err))
         } finally {
@@ -124,8 +126,7 @@ export default function CompanyRequests() {
         setActioningId(requestId)
         try {
             await client.post(`/companies/${slug}/requests/${requestId}/approve/`, {decision: 'approved', comment: ''})
-            const res = await client.get(`/companies/${slug}/requests/`)
-            setRequests(res.data)
+            updateRequestStatus(requestId, 'approved')
         } catch (err) {
             notify('error', apiError(err))
         } finally {
@@ -137,8 +138,7 @@ export default function CompanyRequests() {
         setActioningId(requestId)
         try {
             await client.post(`/companies/${slug}/requests/${requestId}/reject/`, {decision: 'rejected', comment: ''})
-            const res = await client.get(`/companies/${slug}/requests/`)
-            setRequests(res.data)
+            updateRequestStatus(requestId, 'rejected')
         } catch (err) {
             notify('error', apiError(err))
         } finally {
