@@ -29,7 +29,6 @@ class CompanyListCreateView(ListCreateAPIView):
             role=Membership.Role.ADMIN
         )
 
-
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def invite_member(request, slug):
