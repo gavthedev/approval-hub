@@ -1,14 +1,111 @@
 from companies.models import Company
 from companies.permissions import IsCompanyMember, IsCompanyApprover
-from rest_framework.exceptions import ValidationError
+from rest_framework import status
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import ValidationError, NotFound
 from rest_framework.generics import CreateAPIView, ListCreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Request, Approval
-from .serializers import RequestSerializer, ApprovalSerializer
+from .models import Request, TicketType, TicketTypeField
+from .serializers import RequestSerializer, ApprovalSerializer, TicketTypeSerializer, TicketTypeFieldSerializer, \
+    RequestCommentSerializer
 
+
+# ── Ticket Types ────────────────────────────────────────────────
+
+@api_view(["GET", "POST"])
+@permission_classes([IsAuthenticated])
+def ticket_type_list_create(request, slug):
+    try:
+        company = Company.objects.get(slug=slug)
+    except Company.DoesNotExist:
+        raise NotFound("Company not found.")
+
+    membership = company.memberships.filter(user=request.user, is_active=True).first()
+    if not membership:
+        return Response({"error": "Not a member."}, status=status.HTTP_403_FORBIDDEN)
+
+    if request.method == "GET":
+        ticket_types = TicketType.objects.filter(company=company, is_deleted=False)
+        return Response(TicketTypeSerializer(ticket_types, many=True).data)
+
+    if membership.role != "admin":
+        return Response({"error": "Only admins can create ticket types."}, status=status.HTTP_403_FORBIDDEN)
+
+    serializer = TicketTypeSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save(company=company, created_by=request.user)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["PUT", "DELETE"])
+@permission_classes([IsAuthenticated])
+def ticket_type_detail(request, slug, pk):
+    try:
+        ticket_type = TicketType.objects.get(id=pk, company__slug=slug, is_deleted=False)
+    except TicketType.DoesNotExist:
+        raise NotFound("Ticket type not found.")
+
+    membership = ticket_type.company.memberships.filter(user=request.user, is_active=True, role="admin").first()
+    if not membership:
+        return Response({"error": "Only admins can modify ticket types."}, status=status.HTTP_403_FORBIDDEN)
+
+    if request.method == "DELETE":
+        ticket_type.is_deleted = True
+        ticket_type.save()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    serializer = TicketTypeSerializer(ticket_type, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data)
+
+
+# ── Ticket Type Fields ───────────────────────────────────────────
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def ticket_type_field_create(request, slug, pk):
+    try:
+        ticket_type = TicketType.objects.get(id=pk, company__slug=slug, is_deleted=False)
+    except TicketType.DoesNotExist:
+        raise NotFound("Ticket type not found.")
+
+    membership = ticket_type.company.memberships.filter(user=request.user, is_active=True, role="admin").first()
+    if not membership:
+        return Response({"error": "Only admins can add fields."}, status=status.HTTP_403_FORBIDDEN)
+
+    serializer = TicketTypeFieldSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save(ticket_type=ticket_type)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+
+@api_view(["PUT", "DELETE"])
+@permission_classes([IsAuthenticated])
+def ticket_type_field_detail(request, slug, pk, field_id):
+    try:
+        field = TicketTypeField.objects.get(id=field_id, ticket_type__id=pk, ticket_type__company__slug=slug)
+    except TicketTypeField.DoesNotExist:
+        raise NotFound("Field not found.")
+
+    membership = field.ticket_type.company.memberships.filter(user=request.user, is_active=True, role="admin").first()
+    if not membership:
+        return Response({"error": "Only admins can modify fields."}, status=status.HTTP_403_FORBIDDEN)
+
+    if request.method == "DELETE":
+        field.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    serializer = TicketTypeFieldSerializer(field, data=request.data, partial=True)
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+    return Response(serializer.data)
+
+
+# ── Requests ─────────────────────────────────────────────────────
 
 class RequestListCreateView(ListCreateAPIView):
     permission_classes = [IsAuthenticated, IsCompanyMember]
@@ -16,52 +113,65 @@ class RequestListCreateView(ListCreateAPIView):
 
     def get_queryset(self):
         slug = self.kwargs["slug"]
-        return Request.objects.filter(company__slug=slug)
+        return Request.objects.filter(company__slug=slug, is_deleted=False)
 
     def perform_create(self, serializer):
         slug = self.kwargs["slug"]
         company = Company.objects.get(slug=slug)
+        ticket_type_id = self.request.data.get("ticket_type")
+
+        try:
+            ticket_type = TicketType.objects.get(id=ticket_type_id, company=company, is_deleted=False, is_active=True)
+        except TicketType.DoesNotExist:
+            raise ValidationError("Invalid or inactive ticket type.")
+
+        schema_snapshot = list(ticket_type.fields.values(
+            "name", "field_type", "is_required", "order", "placeholder", "help_text"
+        ))
+
         instance = serializer.save(
             company=company,
-            created_by=self.request.user
+            created_by=self.request.user,
+            ticket_type=ticket_type,
+            schema_snapshot=schema_snapshot,
         )
-        instance.transition_to(Request.Status.SUBMITTED)
+        instance.transition_to(Request.Status.SUBMITTED, changed_by=self.request.user)
 
 
-class ApproveRequestCreateView(CreateAPIView):
+class ApproveRequestView(CreateAPIView):
     permission_classes = [IsAuthenticated, IsCompanyApprover]
     serializer_class = ApprovalSerializer
 
     def perform_create(self, serializer):
-        request_id = self.kwargs["pk"]
-        approval_request = Request.objects.get(id=request_id)
-
-        if Approval.objects.filter(request=approval_request).exists():
-            raise ValidationError("This request has already been reviewed.")
+        approval_request = Request.objects.get(id=self.kwargs["pk"])
 
         if not approval_request.can_transition_to(Request.Status.APPROVED):
             raise ValidationError(f"Cannot approve a request with status '{approval_request.status}'.")
 
         serializer.save(approver=self.request.user, request=approval_request)
-        approval_request.transition_to(Request.Status.APPROVED)
+        approval_request.transition_to(
+            Request.Status.APPROVED,
+            changed_by=self.request.user,
+            comment=self.request.data.get("comment", "")
+        )
 
 
-class RejectRequestCreateView(CreateAPIView):
+class RejectRequestView(CreateAPIView):
     permission_classes = [IsAuthenticated, IsCompanyApprover]
     serializer_class = ApprovalSerializer
 
     def perform_create(self, serializer):
-        request_id = self.kwargs["pk"]
-        approval_request = Request.objects.get(id=request_id)
-
-        if Approval.objects.filter(request=approval_request).exists():
-            raise ValidationError("This request has already been reviewed.")
+        approval_request = Request.objects.get(id=self.kwargs["pk"])
 
         if not approval_request.can_transition_to(Request.Status.REJECTED):
             raise ValidationError(f"Cannot reject a request with status '{approval_request.status}'.")
 
         serializer.save(approver=self.request.user, request=approval_request)
-        approval_request.transition_to(Request.Status.REJECTED)
+        approval_request.transition_to(
+            Request.Status.REJECTED,
+            changed_by=self.request.user,
+            comment=self.request.data.get("comment", "")
+        )
 
 
 class ReviewRequestView(APIView):
@@ -69,7 +179,28 @@ class ReviewRequestView(APIView):
 
     def post(self, request, slug, pk):
         approval_request = Request.objects.get(id=pk)
-        approval_request.reviewed_by = request.user
-        approval_request.save(update_fields=["reviewed_by"])
-        approval_request.transition_to(Request.Status.IN_REVIEW)
+        approval_request.transition_to(
+            Request.Status.IN_REVIEW,
+            changed_by=request.user
+        )
         return Response({"status": "in_review"})
+
+
+# ── Comments ─────────────────────────────────────────────────────
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def add_comment(request, slug, pk):
+    try:
+        approval_request = Request.objects.get(id=pk, company__slug=slug, is_deleted=False)
+    except Request.DoesNotExist:
+        raise NotFound("Request not found.")
+
+    membership = approval_request.company.memberships.filter(user=request.user, is_active=True).first()
+    if not membership:
+        return Response({"error": "Not a member."}, status=status.HTTP_403_FORBIDDEN)
+
+    serializer = RequestCommentSerializer(data=request.data)
+    serializer.is_valid(raise_exception=True)
+    serializer.save(request=approval_request, author=request.user)
+    return Response(serializer.data, status=status.HTTP_201_CREATED)
