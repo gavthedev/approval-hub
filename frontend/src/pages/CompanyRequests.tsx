@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from 'react'
 import {useNavigate, useParams} from 'react-router-dom'
-import {ArrowLeft, Check, Loader2, Plus, UserPlus, X} from 'lucide-react'
+import {ArrowLeft, Check, Loader2, Plus, Settings, UserPlus, X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
 import {Input} from '@/components/ui/input'
@@ -12,7 +12,6 @@ import {cn} from '@/lib/utils'
 import client from '@/api/client'
 import type {Request, RequestStatus} from '@/types'
 
-const categories = ['freezer', 'pos', 'oven', 'uniform', 'laptop', 'other']
 const roles = ['member', 'approver', 'admin']
 
 const statusConfig: Record<RequestStatus, { label: string; className: string }> = {
@@ -103,7 +102,7 @@ export default function CompanyRequests() {
         e.preventDefault()
         const v = validateRequest()
         if (Object.keys(v).length) {
-            setRequestErrors(v);
+            setRequestErrors(v)
             return
         }
         setRequestErrors({})
@@ -125,7 +124,7 @@ export default function CompanyRequests() {
         e.preventDefault()
         const v = validateInvite()
         if (Object.keys(v).length) {
-            setInviteErrors(v);
+            setInviteErrors(v)
             return
         }
         setInviteErrors({})
@@ -203,6 +202,7 @@ export default function CompanyRequests() {
                     </button>
                 </div>
             )}
+
             <div className="mb-6">
                 <button onClick={() => navigate('/')}
                         className="mb-4 flex items-center gap-1.5 text-sm text-slate-600 hover:text-slate-900">
@@ -220,12 +220,20 @@ export default function CompanyRequests() {
                                     <Plus className="h-4 w-4"/>New Request
                                 </Button>
                                 {myRole === 'admin' && (
-                                    <Button size="sm" onClick={() => setShowInviteForm(true)}
-                                            className="gap-1.5 bg-green-600 hover:bg-green-700 flex-1 sm:flex-initial">
-                                        <UserPlus className="h-4 w-4"/>
-                                        <span className="hidden sm:inline">Invite Member</span>
-                                        <span className="sm:hidden">Invite</span>
-                                    </Button>
+                                    <>
+                                        <Button size="sm" onClick={() => setShowInviteForm(true)}
+                                                className="gap-1.5 bg-green-600 hover:bg-green-700 flex-1 sm:flex-initial">
+                                            <UserPlus className="h-4 w-4"/>
+                                            <span className="hidden sm:inline">Invite Member</span>
+                                            <span className="sm:hidden">Invite</span>
+                                        </Button>
+                                        <Button variant="outline" size="sm"
+                                                onClick={() => navigate(`/company/${slug}/settings`)}
+                                                className="gap-1.5">
+                                            <Settings className="h-4 w-4"/>
+                                            <span className="hidden sm:inline">Settings</span>
+                                        </Button>
+                                    </>
                                 )}
                             </>
                         )}
@@ -242,7 +250,7 @@ export default function CompanyRequests() {
                                 <Label htmlFor="requestTitle">Title</Label>
                                 <Input id="requestTitle" value={newRequest.title}
                                        onChange={(e) => {
-                                           setNewRequest({...newRequest, title: e.target.value});
+                                           setNewRequest({...newRequest, title: e.target.value})
                                            setRequestErrors(p => ({...p, title: undefined}))
                                        }}
                                        placeholder="Enter request title" className="mt-1.5" autoFocus/>
@@ -253,14 +261,14 @@ export default function CompanyRequests() {
                                 <Label htmlFor="requestCategory">Category</Label>
                                 <Select value={newRequest.category}
                                         onValueChange={(value) => {
-                                            setNewRequest({...newRequest, category: value});
+                                            setNewRequest({...newRequest, category: value})
                                             setRequestErrors(p => ({...p, category: undefined}))
                                         }}>
                                     <SelectTrigger className="mt-1.5 w-full">
                                         <SelectValue placeholder="Select category"/>
                                     </SelectTrigger>
                                     <SelectContent>
-                                        {categories.map((cat) => (
+                                        {['freezer', 'pos', 'oven', 'uniform', 'laptop', 'other'].map((cat) => (
                                             <SelectItem key={cat} value={cat}>{cat}</SelectItem>
                                         ))}
                                     </SelectContent>
@@ -302,7 +310,7 @@ export default function CompanyRequests() {
                                 <Label htmlFor="memberEmail">Email</Label>
                                 <Input id="memberEmail" type="email" value={inviteForm.email}
                                        onChange={(e) => {
-                                           setInviteForm({...inviteForm, email: e.target.value});
+                                           setInviteForm({...inviteForm, email: e.target.value})
                                            setInviteErrors(p => ({...p, email: undefined}))
                                        }}
                                        placeholder="email@example.com" className="mt-1.5" autoFocus/>
@@ -314,7 +322,7 @@ export default function CompanyRequests() {
                                     <Label htmlFor="firstName">First Name</Label>
                                     <Input id="firstName" value={inviteForm.firstName}
                                            onChange={(e) => {
-                                               setInviteForm({...inviteForm, firstName: e.target.value});
+                                               setInviteForm({...inviteForm, firstName: e.target.value})
                                                setInviteErrors(p => ({...p, firstName: undefined}))
                                            }}
                                            placeholder="Alex" className="mt-1.5"/>
@@ -325,7 +333,7 @@ export default function CompanyRequests() {
                                     <Label htmlFor="lastName">Last Name</Label>
                                     <Input id="lastName" value={inviteForm.lastName}
                                            onChange={(e) => {
-                                               setInviteForm({...inviteForm, lastName: e.target.value});
+                                               setInviteForm({...inviteForm, lastName: e.target.value})
                                                setInviteErrors(p => ({...p, lastName: undefined}))
                                            }}
                                            placeholder="Pereira" className="mt-1.5"/>
@@ -338,7 +346,7 @@ export default function CompanyRequests() {
                                     <Label htmlFor="memberRole">Role</Label>
                                     <Select value={inviteForm.role}
                                             onValueChange={(value) => {
-                                                setInviteForm({...inviteForm, role: value});
+                                                setInviteForm({...inviteForm, role: value})
                                                 setInviteErrors(p => ({...p, role: undefined}))
                                             }}>
                                         <SelectTrigger className="mt-1.5 w-full">
@@ -357,7 +365,7 @@ export default function CompanyRequests() {
                                     <Label htmlFor="dateOfBirth">Date of Birth</Label>
                                     <Input id="dateOfBirth" type="date" value={inviteForm.dateOfBirth}
                                            onChange={(e) => {
-                                               setInviteForm({...inviteForm, dateOfBirth: e.target.value});
+                                               setInviteForm({...inviteForm, dateOfBirth: e.target.value})
                                                setInviteErrors(p => ({...p, dateOfBirth: undefined}))
                                            }}
                                            className="mt-1.5"/>
@@ -397,16 +405,13 @@ export default function CompanyRequests() {
                             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                 <div className="min-w-0 flex-1">
                                     <div className="flex flex-wrap items-center gap-2">
-                                        <h3 className="font-medium text-slate-900">{request.title}</h3>
+                                        <h3 className="font-medium text-slate-900">{request.ticket_type_name}</h3>
                                         <Badge variant="outline"
                                                className={cn('text-xs', statusConfig[request.status].className)}>
                                             {statusConfig[request.status].label}
                                         </Badge>
                                     </div>
-                                    <p className="mt-1 text-sm text-slate-500">{request.category}</p>
-                                    {request.description && (
-                                        <p className="mt-2 text-sm text-slate-600">{request.description}</p>
-                                    )}
+                                    <p className="mt-1 text-sm text-slate-500">{request.created_by_email}</p>
                                 </div>
                                 <div className="flex shrink-0 gap-2">
                                     {request.status === 'submitted' && (myRole === 'admin' || myRole === 'approver') && (

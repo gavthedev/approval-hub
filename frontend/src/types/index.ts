@@ -1,37 +1,40 @@
-export interface User {
-    id: number;
-    email: string;
-    first_name: string;
-    last_name: string
-}
-
-export interface Company {
-    id: number;
-    name: string;
-    slug: string;
-    created_by: number;
-    created_at: string;
-}
-
-export type RequestStatus = 'submitted' | 'in_review' | 'approved' | 'rejected'
-
 export interface Request {
     id: number;
-    title: string;
-    category: string;
-    severity: string;
-    location: string;
-    description: string;
+    ticket_type: number | null;
+    ticket_type_name: string | null;
     status: RequestStatus;
-    company: number;
-    created_by: number;
+    schema_snapshot: Record<string, unknown>[];
+    data: Record<string, unknown>;
+    created_by_email: string;
+    created_at: string;
+    updated_at: string;
+    comments: RequestComment[];
+    status_history: RequestStatusHistory[];
+    attachments: RequestAttachment[];
+}
+
+export interface RequestComment {
+    id: number;
+    author_email: string;
+    text: string;
     created_at: string;
     updated_at: string;
 }
 
-export interface Approval {
+export interface RequestStatusHistory {
     id: number;
-    decision: "approved" | "rejected";
+    from_status: string | null;
+    to_status: string;
+    changed_by_email: string;
     comment: string;
     created_at: string;
 }
+
+export interface RequestAttachment {
+    id: number;
+    filename: string;
+    file_size: number;
+    created_at: string;
+}
+
+export type RequestStatus = 'submitted' | 'in_review' | 'approved' | 'rejected'

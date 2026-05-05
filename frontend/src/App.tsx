@@ -6,7 +6,8 @@ import {Dashboard} from "./pages/Dashboard";
 import {Layout} from "./components/Layout";
 import CompanyRequests from "./pages/CompanyRequests";
 import InviteClaim from "./pages/InviteClaim";
-import ProtectedRoute from "./components/ProtectedRoute"
+import ProtectedRoute from "./components/ProtectedRoute";
+import CompanySettings from "./pages/CompanySettings";
 
 export default function App() {
     return (
@@ -23,6 +24,7 @@ export default function App() {
                 }>
                     <Route path="/" element={<Dashboard/>}/>
                     <Route path="/company/:slug" element={<CompanyRequests/>}/>
+                    <Route path="/company/:slug/settings" element={<CompanySettings/>}/>
                 </Route>
             </Routes>
         </BrowserRouter>
