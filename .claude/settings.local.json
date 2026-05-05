@@ -6,7 +6,18 @@
       "Bash(npx eslint:*)",
       "Bash(npm install:*)",
       "Bash(grep -rn invite '/c/My Projects/approval-hub/companies/' --include=*.py)",
-      "Bash(xargs grep:*)"
+      "Bash(xargs grep:*)",
+      "Bash(Get-ChildItem -Path \"C:\\\\My Projects\\\\approval-hub\" -Force)",
+      "Bash(Format-List -Property Name, PSIsContainer)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\My Projects\\\\approval-hub\" -Force | Select-Object Name, @{Name=\"IsDirectory\"; Expression={$_.PSIsContainer}} | Format-Table -AutoSize)",
+      "PowerShell(Get-ChildItem *)",
+      "Bash(awk '{print $NF}')",
+      "Bash(sed 's/['\\\\''\"].*//')",
+      "Bash(Get-ChildItem -Path \"C:\\\\My Projects\\\\approval-hub\\\\backend\" -Recurse -Directory -Name)",
+      "Bash(xargs cat *)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }
