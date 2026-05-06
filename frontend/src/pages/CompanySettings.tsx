@@ -8,6 +8,7 @@ import {Label} from '@/components/ui/label'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select'
 import {cn} from '@/lib/utils'
 import client from '@/api/client'
+import {Switch} from '@/components/ui/switch'
 
 interface TicketTypeField {
     id: number
@@ -144,6 +145,20 @@ export default function CompanySettings() {
         }
     }
 
+    const handleToggleTicketType = async (typeId: number, currentValue: boolean) => {
+        try {
+            await client.put(`/companies/${slug}/ticket-types/${typeId}/`, {
+                is_active: !currentValue
+            })
+            setTicketTypes(ticketTypes.map(t =>
+                t.id === typeId ? {...t, is_active: !currentValue} : t
+            ))
+            notify('success', `Ticket type ${!currentValue ? 'enabled' : 'disabled'}.`)
+        } catch (err) {
+            notify('error', apiError(err))
+        }
+    }
+
     return (
         <div className="mx-auto max-w-3xl">
             {notification && (
@@ -168,7 +183,7 @@ export default function CompanySettings() {
                     Back to {companyName}
                 </button>
                 <div className="flex items-center justify-between">
-                    <h1 className="text-2xl font-semibold text-slate-900">Settings — {companyName}</h1>
+                    <h1 className="text-2xl font-semibold text-slate-900">Settings - {companyName}</h1>
                     {!showNewTypeForm && (
                         <Button size="sm" onClick={() => setShowNewTypeForm(true)} className="gap-1.5">
                             <Plus className="h-4 w-4"/>
@@ -221,10 +236,16 @@ export default function CompanySettings() {
                                     {type.name}
                                     <span className="text-xs text-slate-500">({type.fields.length} fields)</span>
                                 </button>
-                                <button onClick={() => handleDeleteTicketType(type.id)}
-                                        className="text-slate-400 hover:text-red-500">
-                                    <Trash2 className="h-4 w-4"/>
-                                </button>
+                                <div className="flex items-center gap-3">
+                                    <Switch
+                                        checked={type.is_active}
+                                        onCheckedChange={() => handleToggleTicketType(type.id, type.is_active)}
+                                    />
+                                    <button onClick={() => handleDeleteTicketType(type.id)}
+                                            className="text-slate-400 hover:text-red-500">
+                                        <Trash2 className="h-4 w-4"/>
+                                    </button>
+                                </div>
                             </div>
 
                             {expandedType === type.id && (
