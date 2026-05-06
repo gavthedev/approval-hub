@@ -12,6 +12,21 @@ import {cn} from '@/lib/utils'
 import client from '@/api/client'
 import type {Request, RequestStatus} from '@/types'
 
+interface TicketTypeField {
+    name: string
+    label: string
+    type: 'text' | 'number' | 'date' | 'textarea' | 'file'
+    required: boolean
+    placeholder?: string
+}
+
+interface TicketType {
+    id: number
+    name: string
+    is_active: boolean
+    fields: TicketTypeField[]
+}
+
 const roles = ['member', 'approver', 'admin']
 
 const statusConfig: Record<RequestStatus, { label: string; className: string }> = {
@@ -28,11 +43,14 @@ export default function CompanyRequests() {
     const [requests, setRequests] = useState<Request[]>([])
     const [companyName, setCompanyName] = useState('')
     const [myRole, setMyRole] = useState('')
+    const [ticketTypes, setTicketTypes] = useState<TicketType[]>([])
     const [showNewRequestForm, setShowNewRequestForm] = useState(false)
     const [showInviteForm, setShowInviteForm] = useState(false)
-    const [newRequest, setNewRequest] = useState({title: '', category: '', description: ''})
+    const [selectedTicketTypeId, setSelectedTicketTypeId] = useState<string>('')
+    const [fieldValues, setFieldValues] = useState<Record<string, string>>({})
+    const [fileValues, setFileValues] = useState<Record<string, File | null>>({})
+    const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({})
     const [inviteForm, setInviteForm] = useState({email: '', firstName: '', lastName: '', role: '', dateOfBirth: ''})
-    const [requestErrors, setRequestErrors] = useState<{ title?: string; category?: string }>({})
     const [inviteErrors, setInviteErrors] = useState<{
         email?: string;
         firstName?: string;
@@ -54,10 +72,24 @@ export default function CompanyRequests() {
 
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 
+    const activeTicketTypes = ticketTypes.filter(t => t.is_active)
+    const selectedTicketType = activeTicketTypes.find(t => t.id === Number(selectedTicketTypeId)) ?? null
+
     const validateRequest = () => {
-        const e: typeof requestErrors = {}
-        if (!newRequest.title.trim()) e.title = 'Title is required'
-        if (!newRequest.category) e.category = 'Category is required'
+        const e: Record<string, string> = {}
+        if (!selectedTicketTypeId) {
+            e._ticketType = 'Please select a request type'
+            return e
+        }
+        if (!selectedTicketType) return e
+        for (const field of selectedTicketType.fields) {
+            if (!field.required) continue
+            if (field.type === 'file') {
+                if (!fileValues[field.name]) e[field.name] = `${field.label} is required`
+            } else {
+                if (!fieldValues[field.name]?.trim()) e[field.name] = `${field.label} is required`
+            }
+        }
         return e
     }
 
@@ -96,21 +128,57 @@ export default function CompanyRequests() {
             const company = (res.data as { slug: string; name: string }[]).find((c) => c.slug === slug)
             if (company) setCompanyName(company.name)
         }).catch(console.error)
+
+        client.get(`/companies/${slug}/ticket-types/`).then((res) => {
+            setTicketTypes(res.data)
+        }).catch(console.error)
     }, [slug])
+
+    const resetRequestForm = () => {
+        setSelectedTicketTypeId('')
+        setFieldValues({})
+        setFileValues({})
+        setFieldErrors({})
+    }
 
     const handleAddRequest = async (e: React.FormEvent) => {
         e.preventDefault()
         const v = validateRequest()
         if (Object.keys(v).length) {
-            setRequestErrors(v)
+            setFieldErrors(v)
             return
         }
-        setRequestErrors({})
+        setFieldErrors({})
         setSubmittingRequest(true)
         try {
-            const res = await client.post(`/companies/${slug}/requests/`, newRequest)
+            const hasFiles = selectedTicketType?.fields.some(f => f.type === 'file' && fileValues[f.name])
+            let res
+            if (hasFiles) {
+                const form = new FormData()
+                form.append('ticket_type', selectedTicketTypeId)
+                for (const field of selectedTicketType!.fields) {
+                    if (field.type === 'file') {
+                        const file = fileValues[field.name]
+                        if (file) form.append(`data.${field.name}`, file)
+                    } else {
+                        form.append(`data.${field.name}`, fieldValues[field.name] ?? '')
+                    }
+                }
+                res = await client.post(`/companies/${slug}/requests/`, form, {
+                    headers: {'Content-Type': 'multipart/form-data'},
+                })
+            } else {
+                const data: Record<string, string> = {}
+                for (const field of selectedTicketType?.fields ?? []) {
+                    data[field.name] = fieldValues[field.name] ?? ''
+                }
+                res = await client.post(`/companies/${slug}/requests/`, {
+                    ticket_type: Number(selectedTicketTypeId),
+                    data,
+                })
+            }
             setRequests([res.data, ...requests])
-            setNewRequest({title: '', category: '', description: ''})
+            resetRequestForm()
             setShowNewRequestForm(false)
             notify('success', 'Request submitted successfully.')
         } catch (err) {
@@ -245,58 +313,120 @@ export default function CompanyRequests() {
                 <Card className="mb-6 border-slate-200 bg-white shadow-sm">
                     <CardHeader className="pb-4"><CardTitle className="text-lg">New Request</CardTitle></CardHeader>
                     <CardContent>
-                        <form onSubmit={handleAddRequest} noValidate className="flex flex-col gap-4">
-                            <div>
-                                <Label htmlFor="requestTitle">Title</Label>
-                                <Input id="requestTitle" value={newRequest.title}
-                                       onChange={(e) => {
-                                           setNewRequest({...newRequest, title: e.target.value})
-                                           setRequestErrors(p => ({...p, title: undefined}))
-                                       }}
-                                       placeholder="Enter request title" className="mt-1.5" autoFocus/>
-                                {requestErrors.title &&
-                                    <p className="mt-1 text-xs text-red-600">{requestErrors.title}</p>}
+                        {activeTicketTypes.length === 0 ? (
+                            <div className="flex flex-col gap-4">
+                                <p className="text-sm text-slate-500">No ticket types available. Ask your admin to
+                                    create one.</p>
+                                <div className="flex gap-2 sm:justify-end">
+                                    <Button type="button" variant="outline" size="sm"
+                                            onClick={() => {
+                                                setShowNewRequestForm(false)
+                                                resetRequestForm()
+                                            }}
+                                            className="flex-1 sm:flex-initial">Close</Button>
+                                </div>
                             </div>
-                            <div>
-                                <Label htmlFor="requestCategory">Category</Label>
-                                <Select value={newRequest.category}
-                                        onValueChange={(value) => {
-                                            setNewRequest({...newRequest, category: value})
-                                            setRequestErrors(p => ({...p, category: undefined}))
-                                        }}>
-                                    <SelectTrigger className="mt-1.5 w-full">
-                                        <SelectValue placeholder="Select category"/>
-                                    </SelectTrigger>
-                                    <SelectContent>
-                                        {['freezer', 'pos', 'oven', 'uniform', 'laptop', 'other'].map((cat) => (
-                                            <SelectItem key={cat} value={cat}>{cat}</SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                                {requestErrors.category &&
-                                    <p className="mt-1 text-xs text-red-600">{requestErrors.category}</p>}
-                            </div>
-                            <div>
-                                <Label htmlFor="requestDescription">Description</Label>
-                                <Textarea id="requestDescription" value={newRequest.description}
-                                          onChange={(e) => setNewRequest({...newRequest, description: e.target.value})}
-                                          placeholder="Describe your request" className="mt-1.5" rows={3}/>
-                            </div>
-                            <div className="flex gap-2 sm:justify-end">
-                                <Button type="submit" size="sm" disabled={submittingRequest}
-                                        className="flex-1 sm:flex-initial">
-                                    {submittingRequest && <Loader2 className="h-4 w-4 animate-spin"/>}
-                                    {submittingRequest ? 'Submitting...' : 'Submit Request'}
-                                </Button>
-                                <Button type="button" variant="outline" size="sm"
-                                        onClick={() => {
-                                            setShowNewRequestForm(false)
-                                            setNewRequest({title: '', category: '', description: ''})
-                                            setRequestErrors({})
-                                        }}
-                                        className="flex-1 sm:flex-initial">Cancel</Button>
-                            </div>
-                        </form>
+                        ) : (
+                            <form onSubmit={handleAddRequest} noValidate className="flex flex-col gap-4">
+                                <div>
+                                    <Label htmlFor="ticketType">Request Type <span
+                                        className="text-red-500">*</span></Label>
+                                    <Select value={selectedTicketTypeId}
+                                            onValueChange={(value) => {
+                                                setSelectedTicketTypeId(value)
+                                                setFieldValues({})
+                                                setFileValues({})
+                                                setFieldErrors(p => ({
+                                                    ...p,
+                                                    _ticketType: undefined as unknown as string
+                                                }))
+                                            }}>
+                                        <SelectTrigger className="mt-1.5 w-full" id="ticketType" autoFocus>
+                                            <SelectValue placeholder="Select request type"/>
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {activeTicketTypes.map((tt) => (
+                                                <SelectItem key={tt.id} value={String(tt.id)}>{tt.name}</SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                    {fieldErrors._ticketType &&
+                                        <p className="mt-1 text-xs text-red-600">{fieldErrors._ticketType}</p>}
+                                </div>
+
+                                {selectedTicketType?.fields.map((field) => (
+                                    <div key={field.name}>
+                                        <Label htmlFor={`field-${field.name}`}>
+                                            {field.label}
+                                            {field.required && <span className="ml-0.5 text-red-500">*</span>}
+                                        </Label>
+                                        {field.type === 'textarea' ? (
+                                            <Textarea
+                                                id={`field-${field.name}`}
+                                                value={fieldValues[field.name] ?? ''}
+                                                onChange={(e) => {
+                                                    setFieldValues(p => ({...p, [field.name]: e.target.value}))
+                                                    setFieldErrors(p => ({
+                                                        ...p,
+                                                        [field.name]: undefined as unknown as string
+                                                    }))
+                                                }}
+                                                placeholder={field.placeholder}
+                                                className="mt-1.5"
+                                                rows={3}
+                                            />
+                                        ) : field.type === 'file' ? (
+                                            <Input
+                                                id={`field-${field.name}`}
+                                                type="file"
+                                                onChange={(e) => {
+                                                    setFileValues(p => ({
+                                                        ...p,
+                                                        [field.name]: e.target.files?.[0] ?? null
+                                                    }))
+                                                    setFieldErrors(p => ({
+                                                        ...p,
+                                                        [field.name]: undefined as unknown as string
+                                                    }))
+                                                }}
+                                                className="mt-1.5"
+                                            />
+                                        ) : (
+                                            <Input
+                                                id={`field-${field.name}`}
+                                                type={field.type}
+                                                value={fieldValues[field.name] ?? ''}
+                                                onChange={(e) => {
+                                                    setFieldValues(p => ({...p, [field.name]: e.target.value}))
+                                                    setFieldErrors(p => ({
+                                                        ...p,
+                                                        [field.name]: undefined as unknown as string
+                                                    }))
+                                                }}
+                                                placeholder={field.placeholder}
+                                                className="mt-1.5"
+                                            />
+                                        )}
+                                        {fieldErrors[field.name] &&
+                                            <p className="mt-1 text-xs text-red-600">{fieldErrors[field.name]}</p>}
+                                    </div>
+                                ))}
+
+                                <div className="flex gap-2 sm:justify-end">
+                                    <Button type="submit" size="sm" disabled={submittingRequest}
+                                            className="flex-1 sm:flex-initial">
+                                        {submittingRequest && <Loader2 className="h-4 w-4 animate-spin"/>}
+                                        {submittingRequest ? 'Submitting...' : 'Submit Request'}
+                                    </Button>
+                                    <Button type="button" variant="outline" size="sm"
+                                            onClick={() => {
+                                                setShowNewRequestForm(false)
+                                                resetRequestForm()
+                                            }}
+                                            className="flex-1 sm:flex-initial">Cancel</Button>
+                                </div>
+                            </form>
+                        )}
                     </CardContent>
                 </Card>
             )}
