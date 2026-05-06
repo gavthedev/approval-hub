@@ -1,3 +1,11 @@
+export interface Company {
+    id: number;
+    name: string;
+    slug: string;
+    created_at: string;
+    my_role: string | null;
+}
+
 export interface Request {
     id: number;
     ticket_type: number | null;

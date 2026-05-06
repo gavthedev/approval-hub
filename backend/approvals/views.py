@@ -143,7 +143,7 @@ class RequestListCreateView(ListCreateAPIView):
         last_initial = f" {last_name[0]}." if last_name else ""
         name_part = f"{first_name}{last_initial}" if first_name else user.email
         day_str = date.today().strftime("%d %b")
-        title = f"{ticket_type.name} — {name_part} — {day_str}"
+        title = f"{ticket_type.name} | {name_part} | {day_str}"
 
         instance = serializer.save(
             company=company,

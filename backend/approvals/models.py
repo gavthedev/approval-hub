@@ -24,7 +24,7 @@ class TicketType(models.Model):
         unique_together = ("company", "name")
 
     def __str__(self):
-        return f"{self.company.name} — {self.name}"
+        return f"{self.company.name} | {self.name}"
 
 
 class TicketTypeField(models.Model):
@@ -54,7 +54,7 @@ class TicketTypeField(models.Model):
         ordering = ["order"]
 
     def __str__(self):
-        return f"{self.ticket_type.name} — {self.name}"
+        return f"{self.ticket_type.name} | {self.name}"
 
 
 class Request(models.Model):
@@ -106,7 +106,7 @@ class Request(models.Model):
         ordering = ["-created_at"]
 
     def __str__(self):
-        return f"[{self.get_status_display()}] {self.ticket_type} — {self.created_by.email}"
+        return f"[{self.get_status_display()}] {self.ticket_type} | {self.created_by.email}"
 
     ALLOWED_TRANSITIONS = {
         Status.DRAFT: [Status.SUBMITTED, Status.CANCELLED],
@@ -201,7 +201,7 @@ class RequestStatusHistory(models.Model):
         ordering = ["created_at"]
 
     def __str__(self):
-        return f"{self.request} — {self.from_status} → {self.to_status}"
+        return f"{self.request} | {self.from_status} → {self.to_status}"
 
 
 class Approval(models.Model):
