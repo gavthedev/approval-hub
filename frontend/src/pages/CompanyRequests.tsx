@@ -14,9 +14,8 @@ import type {Request, RequestStatus} from '@/types'
 
 interface TicketTypeField {
     name: string
-    label: string
-    type: 'text' | 'number' | 'date' | 'textarea' | 'file'
-    required: boolean
+    field_type: 'text' | 'number' | 'date' | 'textarea' | 'file'
+    is_required: boolean
     placeholder?: string
 }
 
@@ -100,11 +99,11 @@ export default function CompanyRequests() {
         }
         if (!selectedTicketType) return e
         for (const field of selectedTicketType.fields) {
-            if (!field.required) continue
-            if (field.type === 'file') {
-                if (!fileValues[field.name]) e[field.name] = `${field.label} is required`
+            if (!field.is_required) continue
+            if (field.field_type === 'file') {
+                if (!fileValues[field.name]) e[field.name] = `${field.name} is required`
             } else {
-                if (!fieldValues[field.name]?.trim()) e[field.name] = `${field.label} is required`
+                if (!fieldValues[field.name]?.trim()) e[field.name] = `${field.name} is required`
             }
         }
         return e
@@ -168,13 +167,13 @@ export default function CompanyRequests() {
         setFieldErrors({})
         setSubmittingRequest(true)
         try {
-            const hasFiles = selectedTicketType?.fields.some(f => f.type === 'file' && fileValues[f.name])
+            const hasFiles = selectedTicketType?.fields.some(f => f.field_type === 'file' && fileValues[f.name])
             let res
             if (hasFiles) {
                 const form = new FormData()
                 form.append('ticket_type', selectedTicketTypeId)
                 for (const field of selectedTicketType!.fields) {
-                    if (field.type === 'file') {
+                    if (field.field_type === 'file') {
                         const file = fileValues[field.name]
                         if (file) form.append(`data.${field.name}`, file)
                     } else {
@@ -374,10 +373,10 @@ export default function CompanyRequests() {
                                 {selectedTicketType?.fields.map((field) => (
                                     <div key={field.name}>
                                         <Label htmlFor={`field-${field.name}`}>
-                                            {field.label}
-                                            {field.required && <span className="ml-0.5 text-red-500">*</span>}
+                                            {field.name}
+                                            {field.is_required && <span className="ml-0.5 text-red-500">*</span>}
                                         </Label>
-                                        {field.type === 'textarea' ? (
+                                        {field.field_type === 'textarea' ? (
                                             <Textarea
                                                 id={`field-${field.name}`}
                                                 value={fieldValues[field.name] ?? ''}
@@ -392,7 +391,7 @@ export default function CompanyRequests() {
                                                 className="mt-1.5"
                                                 rows={3}
                                             />
-                                        ) : field.type === 'file' ? (
+                                        ) : field.field_type === 'file' ? (
                                             <Input
                                                 id={`field-${field.name}`}
                                                 type="file"
@@ -411,7 +410,7 @@ export default function CompanyRequests() {
                                         ) : (
                                             <Input
                                                 id={`field-${field.name}`}
-                                                type={field.type}
+                                                type={field.field_type}
                                                 value={fieldValues[field.name] ?? ''}
                                                 onChange={(e) => {
                                                     setFieldValues(p => ({...p, [field.name]: e.target.value}))
@@ -553,7 +552,7 @@ export default function CompanyRequests() {
                             .map(f => f.name)
                     )
                     const dataEntries = Object.entries(request.data).filter(
-                        ([key, value]) => !fileFieldNames.has(key) && typeof value === 'string'
+                        ([key, value]) => !fileFieldNames.has(key) && typeof value === 'string' && value !== ''
                     ) as [string, string][]
 
                     return (
