@@ -2,10 +2,12 @@ export interface Request {
     id: number;
     ticket_type: number | null;
     ticket_type_name: string | null;
+    title: string;
     status: RequestStatus;
     schema_snapshot: Record<string, unknown>[];
     data: Record<string, unknown>;
     created_by_email: string;
+    created_by_name: string;
     created_at: string;
     updated_at: string;
     comments: RequestComment[];

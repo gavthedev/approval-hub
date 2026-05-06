@@ -95,6 +95,7 @@ class Request(models.Model):
         choices=Status.choices,
         default=Status.DRAFT,
     )
+    title = models.CharField(max_length=255, blank=True, default="")
     schema_snapshot = models.JSONField(default=list)
     data = models.JSONField(default=dict)
     created_at = models.DateTimeField(auto_now_add=True)

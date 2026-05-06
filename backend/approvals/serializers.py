@@ -51,16 +51,27 @@ class RequestSerializer(serializers.ModelSerializer):
     attachments = RequestAttachmentSerializer(many=True, read_only=True)
     ticket_type_name = serializers.CharField(source="ticket_type.name", read_only=True)
     created_by_email = serializers.EmailField(source="created_by.email", read_only=True)
+    created_by_name = serializers.SerializerMethodField()
+
+    def get_created_by_name(self, obj):
+        user = obj.created_by
+        first_name = user.first_name
+        last_name = user.last_name
+        if first_name or last_name:
+            if last_name:
+                return f"{first_name} {last_name[0]}."
+            return first_name
+        return user.email
 
     class Meta:
         model = Request
         fields = [
-            "id", "ticket_type", "ticket_type_name", "status",
-            "schema_snapshot", "data", "created_by_email",
+            "id", "ticket_type", "ticket_type_name", "title", "status",
+            "schema_snapshot", "data", "created_by_email", "created_by_name",
             "created_at", "updated_at", "comments",
             "status_history", "attachments"
         ]
-        read_only_fields = ["status", "schema_snapshot", "created_at", "updated_at"]
+        read_only_fields = ["title", "status", "schema_snapshot", "created_at", "updated_at"]
 
 
 class ApprovalSerializer(serializers.ModelSerializer):

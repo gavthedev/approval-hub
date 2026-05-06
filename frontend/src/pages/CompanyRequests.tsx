@@ -61,6 +61,7 @@ export default function CompanyRequests() {
     const [submittingRequest, setSubmittingRequest] = useState(false)
     const [submittingInvite, setSubmittingInvite] = useState(false)
     const [actioningId, setActioningId] = useState<number | null>(null)
+    const [expandedFields, setExpandedFields] = useState<Set<string>>(new Set())
     const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
     const notifTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
 
@@ -68,6 +69,22 @@ export default function CompanyRequests() {
         if (notifTimer.current) clearTimeout(notifTimer.current)
         setNotification({type, message})
         notifTimer.current = setTimeout(() => setNotification(null), 4000)
+    }
+
+    const formatShortDate = (dateStr: string) => {
+        const d = new Date(dateStr)
+        const day = String(d.getDate()).padStart(2, '0')
+        const month = d.toLocaleString('en-US', {month: 'short'})
+        return `${day} ${month}`
+    }
+
+    const toggleField = (key: string) => {
+        setExpandedFields(prev => {
+            const next = new Set(prev)
+            if (next.has(key)) next.delete(key)
+            else next.add(key)
+            return next
+        })
     }
 
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -529,55 +546,104 @@ export default function CompanyRequests() {
             )}
 
             <div className="flex flex-col gap-3">
-                {requests.map((request) => (
-                    <Card key={request.id} className="border-slate-200 bg-white shadow-sm">
-                        <CardContent className="p-4">
-                            <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                                <div className="min-w-0 flex-1">
-                                    <div className="flex flex-wrap items-center gap-2">
-                                        <h3 className="font-medium text-slate-900">{request.ticket_type_name}</h3>
-                                        <Badge variant="outline"
-                                               className={cn('text-xs', statusConfig[request.status].className)}>
-                                            {statusConfig[request.status].label}
-                                        </Badge>
+                {requests.map((request) => {
+                    const fileFieldNames = new Set(
+                        (request.schema_snapshot as { name: string; field_type: string }[])
+                            .filter(f => f.field_type === 'file')
+                            .map(f => f.name)
+                    )
+                    const dataEntries = Object.entries(request.data).filter(
+                        ([key, value]) => !fileFieldNames.has(key) && typeof value === 'string'
+                    ) as [string, string][]
+
+                    return (
+                        <Card key={request.id} className="border-slate-200 bg-white shadow-sm">
+                            <CardContent className="p-4">
+                                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                                    <div className="min-w-0 flex-1">
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h3 className="font-bold text-slate-900">{request.title || request.ticket_type_name}</h3>
+                                            <Badge variant="outline"
+                                                   className={cn('text-xs', statusConfig[request.status].className)}>
+                                                {statusConfig[request.status].label}
+                                            </Badge>
+                                        </div>
+                                        <div
+                                            className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-slate-500">
+                                            <span>{request.created_by_name}</span>
+                                            <span aria-hidden>·</span>
+                                            <span
+                                                title={request.created_at}>{formatShortDate(request.created_at)}</span>
+                                        </div>
+                                        {dataEntries.length > 0 && (
+                                            <dl className="mt-2 flex flex-col gap-1">
+                                                {dataEntries.map(([key, value]) => {
+                                                    const fieldKey = `${request.id}:${key}`
+                                                    const isExpanded = expandedFields.has(fieldKey)
+                                                    const isLong = value.length > 100
+                                                    return (
+                                                        <div key={key} className="text-sm">
+                                                            <dt className="inline font-medium text-slate-700 capitalize">{key.replace(/_/g, ' ')}:</dt>
+                                                            <dd className="inline text-slate-600">
+                                                                {isLong && !isExpanded
+                                                                    ? <>{value.slice(0, 100)}&hellip;
+                                                                        <button
+                                                                            onClick={() => toggleField(fieldKey)}
+                                                                            className="text-blue-600 hover:underline text-xs">Show
+                                                                            more
+                                                                        </button>
+                                                                    </>
+                                                                    : <>{value}{isLong && <>
+                                                                        <button
+                                                                            onClick={() => toggleField(fieldKey)}
+                                                                            className="text-blue-600 hover:underline text-xs">Show
+                                                                            less
+                                                                        </button>
+                                                                    </>}</>
+                                                                }
+                                                            </dd>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </dl>
+                                        )}
                                     </div>
-                                    <p className="mt-1 text-sm text-slate-500">{request.created_by_email}</p>
-                                </div>
-                                <div className="flex shrink-0 gap-2">
-                                    {request.status === 'submitted' && (myRole === 'admin' || myRole === 'approver') && (
-                                        <Button size="sm" variant="outline" onClick={() => handleReview(request.id)}
-                                                disabled={actioningId === request.id}
-                                                className="border-yellow-300 bg-yellow-50 text-yellow-700 hover:bg-yellow-100">
-                                            {actioningId === request.id
-                                                ? <Loader2 className="h-4 w-4 animate-spin"/>
-                                                : 'Review'}
-                                        </Button>
-                                    )}
-                                    {request.status === 'in_review' && (myRole === 'admin' || myRole === 'approver') && (
-                                        <>
-                                            <Button size="sm" onClick={() => handleApprove(request.id)}
+                                    <div className="flex shrink-0 gap-2">
+                                        {request.status === 'submitted' && (myRole === 'admin' || myRole === 'approver') && (
+                                            <Button size="sm" variant="outline" onClick={() => handleReview(request.id)}
                                                     disabled={actioningId === request.id}
-                                                    className="bg-green-600 hover:bg-green-700">
+                                                    className="border-yellow-300 bg-yellow-50 text-yellow-700 hover:bg-yellow-100">
                                                 {actioningId === request.id
                                                     ? <Loader2 className="h-4 w-4 animate-spin"/>
-                                                    : <Check className="h-4 w-4"/>}
-                                                <span className="ml-1">Approve</span>
+                                                    : 'Review'}
                                             </Button>
-                                            <Button size="sm" variant="destructive"
-                                                    onClick={() => handleReject(request.id)}
-                                                    disabled={actioningId === request.id}>
-                                                {actioningId === request.id
-                                                    ? <Loader2 className="h-4 w-4 animate-spin"/>
-                                                    : <X className="h-4 w-4"/>}
-                                                <span className="ml-1">Reject</span>
-                                            </Button>
-                                        </>
-                                    )}
+                                        )}
+                                        {request.status === 'in_review' && (myRole === 'admin' || myRole === 'approver') && (
+                                            <>
+                                                <Button size="sm" onClick={() => handleApprove(request.id)}
+                                                        disabled={actioningId === request.id}
+                                                        className="bg-green-600 hover:bg-green-700">
+                                                    {actioningId === request.id
+                                                        ? <Loader2 className="h-4 w-4 animate-spin"/>
+                                                        : <Check className="h-4 w-4"/>}
+                                                    <span className="ml-1">Approve</span>
+                                                </Button>
+                                                <Button size="sm" variant="destructive"
+                                                        onClick={() => handleReject(request.id)}
+                                                        disabled={actioningId === request.id}>
+                                                    {actioningId === request.id
+                                                        ? <Loader2 className="h-4 w-4 animate-spin"/>
+                                                        : <X className="h-4 w-4"/>}
+                                                    <span className="ml-1">Reject</span>
+                                                </Button>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                ))}
+                            </CardContent>
+                        </Card>
+                    )
+                })}
             </div>
 
             {requests.length === 0 && !showNewRequestForm && (

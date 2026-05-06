@@ -1,4 +1,6 @@
-from companies.models import Company
+from datetime import date
+
+from companies.models import Company, Membership
 from companies.permissions import IsCompanyMember, IsCompanyApprover
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -113,7 +115,13 @@ class RequestListCreateView(ListCreateAPIView):
 
     def get_queryset(self):
         slug = self.kwargs["slug"]
-        return Request.objects.filter(company__slug=slug, is_deleted=False)
+        qs = Request.objects.filter(company__slug=slug, is_deleted=False)
+        membership = Membership.objects.filter(
+            user=self.request.user, company__slug=slug, is_active=True
+        ).first()
+        if membership and membership.role == "member":
+            qs = qs.filter(created_by=self.request.user)
+        return qs
 
     def perform_create(self, serializer):
         slug = self.kwargs["slug"]
@@ -129,13 +137,23 @@ class RequestListCreateView(ListCreateAPIView):
             "name", "field_type", "is_required", "order", "placeholder", "help_text"
         ))
 
+        user = self.request.user
+        first_name = user.first_name
+        last_name = user.last_name
+        last_initial = f" {last_name[0]}." if last_name else ""
+        name_part = f"{first_name}{last_initial}" if first_name else user.email
+        day_str = date.today().strftime("%d %b")
+        title = f"{ticket_type.name} — {name_part} — {day_str}"
+
         instance = serializer.save(
             company=company,
-            created_by=self.request.user,
+            created_by=user,
             ticket_type=ticket_type,
             schema_snapshot=schema_snapshot,
         )
-        instance.transition_to(Request.Status.SUBMITTED, changed_by=self.request.user)
+        instance.title = title
+        instance.save(update_fields=["title"])
+        instance.transition_to(Request.Status.SUBMITTED, changed_by=user)
 
 
 class ApproveRequestView(CreateAPIView):

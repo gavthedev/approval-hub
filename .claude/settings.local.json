@@ -17,7 +17,10 @@
       "Bash(xargs cat *)",
       "Bash(git add *)",
       "Bash(git commit -m ' *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "Bash(python manage.py makemigrations approvals)",
+      "Bash(python -c \"import approvals.views; import approvals.serializers; import approvals.models; print\\('Import check OK'\\)\")",
+      "Bash(python manage.py check)"
     ]
   }
 }
