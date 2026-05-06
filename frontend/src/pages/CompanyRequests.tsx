@@ -561,7 +561,7 @@ export default function CompanyRequests() {
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div className="min-w-0 flex-1">
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <h3 className="font-bold text-slate-900">{request.title || request.ticket_type_name}</h3>
+                                            <h3 className="font-bold text-slate-900">{request.ticket_type_name}</h3>
                                             <Badge variant="outline"
                                                    className={cn('text-xs', statusConfig[request.status].className)}>
                                                 {statusConfig[request.status].label}
