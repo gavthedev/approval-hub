@@ -1,21 +1,75 @@
 import {useEffect, useState} from 'react'
-import {NavLink, Outlet} from 'react-router-dom'
-import {Building2, LayoutDashboard, LogOut, User} from 'lucide-react'
+import {NavLink, Outlet, useNavigate} from 'react-router-dom'
+import {Building2, ChevronDown, ChevronRight, LogOut, User} from 'lucide-react'
 import {cn} from '@/lib/utils'
 import client from '@/api/client'
 
-const navigation = [
-    {name: 'Dashboard', href: '/', icon: LayoutDashboard},
-]
+interface Company {
+    id: number
+    name: string
+    slug: string
+}
+
+interface TicketType {
+    id: number
+    name: string
+    is_active: boolean
+}
 
 export function Layout() {
+    const navigate = useNavigate()
     const [user, setUser] = useState({email: '', first_name: '', last_name: ''})
+    const [companies, setCompanies] = useState<Company[]>([])
+    const [loading, setLoading] = useState(true)
+    const [expandedCompanies, setExpandedCompanies] = useState<Set<string>>(new Set())
+    const [expandedTicketSections, setExpandedTicketSections] = useState<Set<string>>(new Set())
+    const [ticketTypeCache, setTicketTypeCache] = useState<Record<string, TicketType[]>>({})
 
     useEffect(() => {
-        client.get('/me/').then((res) => {
-            setUser(res.data)
-        }).catch(console.error)
+        Promise.all([
+            client.get('/me/'),
+            client.get('/companies/'),
+        ]).then(([meRes, companiesRes]) => {
+            setUser(meRes.data)
+            const data: Company[] = companiesRes.data
+            setCompanies(data)
+            setExpandedCompanies(new Set(data.map(c => c.slug)))
+        }).catch(console.error).finally(() => setLoading(false))
     }, [])
+
+    const toggleCompany = (slug: string) => {
+        setExpandedCompanies(prev => {
+            const next = new Set(prev)
+            if (next.has(slug)) next.delete(slug)
+            else next.add(slug)
+            return next
+        })
+    }
+
+    const toggleTicketSection = async (slug: string) => {
+        const isExpanding = !expandedTicketSections.has(slug)
+        setExpandedTicketSections(prev => {
+            const next = new Set(prev)
+            if (next.has(slug)) next.delete(slug)
+            else next.add(slug)
+            return next
+        })
+        if (isExpanding && !(slug in ticketTypeCache)) {
+            try {
+                const res = await client.get(`/companies/${slug}/ticket-types/`)
+                const active: TicketType[] = res.data.filter((tt: TicketType) => tt.is_active)
+                setTicketTypeCache(prev => ({...prev, [slug]: active}))
+            } catch (e) {
+                console.error(e)
+            }
+        }
+    }
+
+    const displayName = () => {
+        if (user.first_name && user.last_name) return `${user.first_name} ${user.last_name[0]}.`
+        if (user.first_name) return user.first_name
+        return user.email
+    }
 
     const handleLogout = () => {
         localStorage.removeItem('access_token')
@@ -37,32 +91,119 @@ export function Layout() {
                     </div>
                 </div>
 
-                <nav className="flex-1 px-3 py-4">
-                    {navigation.map((item) => (
-                        <NavLink key={item.name} to={item.href}
-                                 className={({isActive}) => cn(
-                                     'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
-                                     isActive ? 'bg-white/10 text-white' : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                                 )}>
-                            <item.icon className="h-5 w-5"/>
-                            {item.name}
-                        </NavLink>
-                    ))}
+                <nav className="flex-1 overflow-y-auto px-3 py-4">
+                    <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
+                        Companies
+                    </p>
+
+                    {loading ? (
+                        <div className="flex items-center gap-2 px-3 py-2">
+                            <div
+                                className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-slate-600 border-t-slate-300"/>
+                            <span className="text-xs text-slate-500">Loading...</span>
+                        </div>
+                    ) : (
+                        companies.map(company => (
+                            <div key={company.slug} className="mb-0.5">
+                                {/* Company row — two independent click zones */}
+                                <div className="flex items-center rounded-lg">
+                                    <NavLink
+                                        to={`/company/${company.slug}`}
+                                        className={({isActive}) => cn(
+                                            'flex flex-1 items-center gap-2 rounded-l-lg px-3 py-2 text-sm font-medium transition-colors min-w-0',
+                                            isActive
+                                                ? 'bg-white/10 text-white'
+                                                : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                                        )}
+                                    >
+                                        <Building2 className="h-4 w-4 shrink-0"/>
+                                        <span className="truncate">{company.name}</span>
+                                    </NavLink>
+                                    <button
+                                        onClick={() => toggleCompany(company.slug)}
+                                        className="shrink-0 rounded-r-lg px-2 py-2 text-slate-400 transition-colors hover:bg-white/5 hover:text-white"
+                                    >
+                                        {expandedCompanies.has(company.slug)
+                                            ? <ChevronDown className="h-4 w-4"/>
+                                            : <ChevronRight className="h-4 w-4"/>}
+                                    </button>
+                                </div>
+
+                                {/* Company submenu */}
+                                {expandedCompanies.has(company.slug) && (
+                                    <div className="mb-1 mt-0.5">
+                                        <NavLink
+                                            to={`/company/${company.slug}`}
+                                            end
+                                            className={({isActive}) => cn(
+                                                'flex items-center rounded-lg py-1.5 pl-8 pr-3 text-sm transition-colors',
+                                                isActive
+                                                    ? 'bg-white/10 text-white'
+                                                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                                            )}
+                                        >
+                                            View Tickets
+                                        </NavLink>
+
+                                        {/* Open Ticket section */}
+                                        <button
+                                            onClick={() => toggleTicketSection(company.slug)}
+                                            className="flex w-full items-center justify-between rounded-lg py-1.5 pl-8 pr-3 text-sm text-slate-300 transition-colors hover:bg-white/5 hover:text-white"
+                                        >
+                                            <span>Open Ticket</span>
+                                            {expandedTicketSections.has(company.slug)
+                                                ? <ChevronDown className="h-3.5 w-3.5"/>
+                                                : <ChevronRight className="h-3.5 w-3.5"/>}
+                                        </button>
+
+                                        {expandedTicketSections.has(company.slug) && (
+                                            <div>
+                                                {!(company.slug in ticketTypeCache) ? (
+                                                    <div className="py-1.5 pl-10 text-xs text-slate-500">
+                                                        Loading...
+                                                    </div>
+                                                ) : ticketTypeCache[company.slug].length === 0 ? (
+                                                    <div className="py-1.5 pl-10 text-xs text-slate-500">
+                                                        No ticket types
+                                                    </div>
+                                                ) : (
+                                                    ticketTypeCache[company.slug].map(tt => (
+                                                        <NavLink
+                                                            key={tt.id}
+                                                            to={`/company/${company.slug}/new-request/${tt.id}`}
+                                                            className={({isActive}) => cn(
+                                                                'flex items-center rounded-lg py-1.5 pl-10 pr-3 text-sm transition-colors',
+                                                                isActive
+                                                                    ? 'bg-white/10 text-white'
+                                                                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                                                            )}
+                                                        >
+                                                            {tt.name}
+                                                        </NavLink>
+                                                    ))
+                                                )}
+                                            </div>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        ))
+                    )}
                 </nav>
 
                 <div className="border-t border-slate-700 p-4">
                     <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-slate-600">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-600">
                             <User className="h-5 w-5 text-white"/>
                         </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-white truncate">
-                                {user.first_name ? `${user.first_name} ${user.last_name}` : user.email}
+                        <div className="min-w-0 flex-1">
+                            <p className="truncate text-sm font-medium text-white">
+                                {displayName()}
                             </p>
-                            <p className="text-xs text-slate-400 truncate">{user.email}</p>
                         </div>
-                        <button onClick={handleLogout}
-                                className="rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white">
+                        <button
+                            onClick={handleLogout}
+                            className="shrink-0 rounded-lg p-2 text-slate-400 hover:bg-white/5 hover:text-white">
                             <LogOut className="h-4 w-4"/>
                         </button>
                     </div>
