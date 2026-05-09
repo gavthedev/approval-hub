@@ -1,5 +1,5 @@
 import {useEffect, useRef, useState} from 'react'
-import {useNavigate, useParams} from 'react-router-dom'
+import {useLocation, useNavigate, useParams} from 'react-router-dom'
 import {ArrowLeft, Check, Loader2, Plus, Settings, UserPlus, X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
@@ -38,6 +38,7 @@ const statusConfig: Record<RequestStatus, { label: string; className: string }> 
 export default function CompanyRequests() {
     const {slug} = useParams<{ slug: string }>()
     const navigate = useNavigate()
+    const location = useLocation()
 
     const [requests, setRequests] = useState<Request[]>([])
     const [companyName, setCompanyName] = useState('')
@@ -149,6 +150,14 @@ export default function CompanyRequests() {
             setTicketTypes(res.data)
         }).catch(console.error)
     }, [slug])
+
+    useEffect(() => {
+        const state = location.state as { successMessage?: string } | null
+        if (state?.successMessage) {
+            notify('success', state.successMessage)
+            navigate(location.pathname, {replace: true, state: null})
+        }
+    }, [location.state, location.pathname, navigate])
 
     const resetRequestForm = () => {
         setSelectedTicketTypeId('')
