@@ -580,8 +580,10 @@ export default function CompanyRequests() {
                                             className="mt-1 flex flex-wrap items-center gap-x-2 text-sm text-slate-500">
                                             <span>{request.created_by_name}</span>
                                             <span aria-hidden>·</span>
-                                            <span
-                                                title={request.created_at}>{formatShortDate(request.created_at)}</span>
+                                            <span title={new Date(request.created_at).toLocaleString('en-CH', {
+                                                day: '2-digit', month: 'long', year: 'numeric',
+                                                hour: '2-digit', minute: '2-digit'
+                                            })}>{formatShortDate(request.created_at)}</span>
                                         </div>
                                         {dataEntries.length > 0 && (
                                             <dl className="mt-2 flex flex-col gap-1">

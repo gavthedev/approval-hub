@@ -201,6 +201,7 @@ export default function NewRequest() {
                                     <Input
                                         id={`field-${field.name}`}
                                         type={field.field_type}
+                                        inputMode={field.field_type === 'number' ? 'numeric' : undefined}
                                         value={fieldValues[field.name] ?? ''}
                                         onChange={e => {
                                             setFieldValues(p => ({...p, [field.name]: e.target.value}))
