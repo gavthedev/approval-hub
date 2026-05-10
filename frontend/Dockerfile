@@ -8,6 +8,6 @@ RUN npm install
 COPY . .
 RUN npm run build
 
-FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html
-EXPOSE 80
+FROM alpine
+COPY --from=builder /app/dist /dist
+CMD ["sh", "-c", "cp -r /dist/. /usr/share/nginx/html/"]
