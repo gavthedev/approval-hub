@@ -23,6 +23,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = config('SECRET_KEY', default='dev-secret-key')
 DEBUG = config('DEBUG', default=True, cast=bool)
+CSRF_TRUSTED_ORIGINS = ['https://approvalhub.ch', 'https://www.approvalhub.ch']
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost').split(',')
 # Application definition
