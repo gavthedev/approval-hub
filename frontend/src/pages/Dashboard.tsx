@@ -148,7 +148,7 @@ export function Dashboard() {
                             <div className="min-w-0 flex-1">
                                 <div className="flex items-start gap-1">
                                     <h3 className="truncate font-medium text-slate-900">{company.name}</h3>
-                                    <Badge className="text-sm bg-blue-900 capitalize -mt-3 shrink-0">{company.my_role}</Badge>
+                                    <Badge variant="outline" className="text-xsm capitalize -mt-5 shrink-0">{company.my_role}</Badge>
                                 </div>
                             </div>
                             <ChevronRight className="h-5 w-5 flex-shrink-0 text-slate-400"/>
