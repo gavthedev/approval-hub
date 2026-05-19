@@ -132,7 +132,6 @@ def claim_invite(request, token):
 
     return Response({"message": "Account activated! You can now login."}, status=status.HTTP_200_OK)
 
-
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
