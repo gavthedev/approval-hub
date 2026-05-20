@@ -91,46 +91,69 @@ def claim_invite(request, token):
     try:
         invite = Invite.objects.get(token=token)
     except Invite.DoesNotExist:
-        return Response({"error": "Invalid invite link."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "Invalid invite link."}, status=400)
 
     if invite.is_used:
-        return Response({"error": "This invite has already been used."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "This invite has already been used."}, status=400)
 
     if invite.is_expired:
-        return Response({"error": "This invite has expired."}, status=status.HTTP_400_BAD_REQUEST)
+        return Response({"error": "This invite has expired."}, status=400)
 
-    date_of_birth = request.data.get("date_of_birth")
-    password = request.data.get("password")
-
-    if not date_of_birth or not password:
-        return Response({"error": "date_of_birth and password are required."}, status=status.HTTP_400_BAD_REQUEST)
-
-    try:
+    if User.objects.filter(email=invite.email, is_active=True).exists():
         user = User.objects.get(email=invite.email)
-    except User.DoesNotExist:
-        return Response({"error": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
+        date_of_birth = request.data.get("date_of_birth")
+        if not date_of_birth:
+            return Response({"error": "date_of_birth and password are required."}, status=status.HTTP_400_BAD_REQUEST)
 
-    if str(user.date_of_birth) != date_of_birth:
-        return Response({"error": "Incorrect date of birth."}, status=status.HTTP_400_BAD_REQUEST)
+        if str(user.date_of_birth) != date_of_birth:
+            return Response({"error": "Incorrect date of birth."}, status=status.HTTP_400_BAD_REQUEST)
 
-    user.set_password(password)
-    user.is_active = True
-    user.is_verified = True
-    user.save()
+        from companies.models import Membership
+        Membership.objects.get_or_create(
+            user=user,
+            company=invite.company,
+            defaults={"role": invite.role}
+        )
+        invite.is_used = True
+        invite.claimed_by = user
+        invite.claimed_at = timezone.now()
+        invite.save()
 
-    from companies.models import Membership
-    Membership.objects.get_or_create(
-        user=user,
-        company=invite.company,
-        defaults={"role": invite.role}
-    )
+        return Response({"message": "Invite accepted! Welcome to the team."}, status=status.HTTP_200_OK)
 
-    invite.is_used = True
-    invite.claimed_by = user
-    invite.claimed_at = timezone.now()
-    invite.save()
+    else:
+        date_of_birth = request.data.get("date_of_birth")
+        password = request.data.get("password")
 
-    return Response({"message": "Account activated! You can now login."}, status=status.HTTP_200_OK)
+        if not date_of_birth or not password:
+            return Response({"error": "date_of_birth and password are required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            user = User.objects.get(email=invite.email)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if str(user.date_of_birth) != date_of_birth:
+            return Response({"error": "Incorrect date of birth."}, status=status.HTTP_400_BAD_REQUEST)
+
+        user.set_password(password)
+        user.is_active = True
+        user.is_verified = True
+        user.save()
+
+        from companies.models import Membership
+        Membership.objects.get_or_create(
+            user=user,
+            company=invite.company,
+            defaults={"role": invite.role}
+        )
+
+        invite.is_used = True
+        invite.claimed_by = user
+        invite.claimed_at = timezone.now()
+        invite.save()
+
+        return Response({"message": "Account activated! You can now login."}, status=status.HTTP_200_OK)
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
