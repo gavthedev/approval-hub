@@ -594,7 +594,7 @@ export default function CompanyRequests() {
                                                     const isLong = value.length > 100
                                                     return (
                                                         <div key={key} className="text-sm">
-                                                            <dt className="inline font-medium text-slate-700 capitalize">{key.replace(/_/g, ' ')}:</dt>
+                                                            <dt className="inline font-medium text-slate-700 capitalize">{key.replace(/_/g, ' ')}: </dt>
                                                             <dd className="inline text-slate-600">
                                                                 {isLong && !isExpanded
                                                                     ? <>{value.slice(0, 100)}&hellip;

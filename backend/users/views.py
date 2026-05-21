@@ -119,7 +119,10 @@ def claim_invite(request, token):
         invite.claimed_at = timezone.now()
         invite.save()
 
-        return Response({"message": "Invite accepted! Welcome to the team."}, status=status.HTTP_200_OK)
+        return Response({
+            "message": "Invite accepted! Welcome to the team.",
+            "company_slug": invite.company.slug
+        }, status=status.HTTP_200_OK)
 
     else:
         date_of_birth = request.data.get("date_of_birth")
@@ -153,14 +156,17 @@ def claim_invite(request, token):
         invite.claimed_at = timezone.now()
         invite.save()
 
-        return Response({"message": "Account activated! You can now login."}, status=status.HTTP_200_OK)
+        return Response({
+            "message": "Invite accepted! Welcome to the team.",
+            "company_slug": invite.company.slug
+        }, status=status.HTTP_200_OK)
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
         if not self.user.is_verified:
             raise serializers.ValidationError(
-                {"error": "Please verify your email before loggin in."}
+                {"error": "Please verify your email before logging in."}
             )
         return data
 

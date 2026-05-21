@@ -14,6 +14,8 @@ export default function InviteClaim() {
     const [message, setMessage] = useState('')
     const [serverError, setServerError] = useState('')
     const [loading, setLoading] = useState(false)
+    const isLoggedIn = !!localStorage.getItem('access_token')
+    const companySlug = res.data.company_slug
 
     const validate = () => {
         const e: typeof errors = {}
@@ -39,7 +41,13 @@ export default function InviteClaim() {
                 date_of_birth: dateOfBirth,
             })
             setMessage(res.data.message)
-            setTimeout(() => navigate('/login'), 2000)
+            setTimeout(() => {
+                if (isLoggedIn && companySlug) {
+                    navigate(`/company/${companySlug}`)
+                } else {
+                    navigate('/login')
+                }
+            }, 2000)
         } catch (err: unknown) {
             const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
             setServerError(msg || 'Something went wrong. Please try again.')
