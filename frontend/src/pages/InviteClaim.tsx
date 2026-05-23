@@ -15,7 +15,6 @@ export default function InviteClaim() {
     const [serverError, setServerError] = useState('')
     const [loading, setLoading] = useState(false)
     const isLoggedIn = !!localStorage.getItem('access_token')
-    const companySlug = res.data.company_slug
 
     const validate = () => {
         const e: typeof errors = {}
@@ -40,6 +39,7 @@ export default function InviteClaim() {
                 password,
                 date_of_birth: dateOfBirth,
             })
+            const companySlug = res.data.company_slug
             setMessage(res.data.message)
             setTimeout(() => {
                 if (isLoggedIn && companySlug) {
