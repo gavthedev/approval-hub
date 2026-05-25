@@ -79,17 +79,19 @@ export default function InviteClaim() {
                                    className="mt-1.5"/>
                             {errors.dateOfBirth && <p className="mt-1 text-xs text-red-600">{errors.dateOfBirth}</p>}
                         </div>
-                        <div>
-                            <Label htmlFor="password">New Password</Label>
-                            <Input id="password" type="password" placeholder="Choose a password"
-                                   value={password}
-                                   onChange={(e) => {
-                                       setPassword(e.target.value);
-                                       setErrors(p => ({...p, password: undefined}))
-                                   }}
-                                   className="mt-1.5"/>
-                            {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
-                        </div>
+                        {!isLoggedIn && (
+                            <div>
+                                <Label htmlFor="password">New Password</Label>
+                                <Input id="password" type="password" placeholder="Choose a password"
+                                       value={password}
+                                       onChange={(e) => {
+                                           setPassword(e.target.value);
+                                           setErrors(p => ({...p, password: undefined}))
+                                       }}
+                                       className="mt-1.5"/>
+                                {errors.password && <p className="mt-1 text-xs text-red-600">{errors.password}</p>}
+                            </div>
+                        )}
                         <Button type="submit" disabled={loading} className="w-full">
                             {loading ? 'Activating...' : 'Activate Account'}
                         </Button>
