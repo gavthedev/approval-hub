@@ -20,8 +20,10 @@ export default function InviteClaim() {
         const e: typeof errors = {}
         if (!dateOfBirth) e.dateOfBirth = 'Date of birth is required'
         else if (new Date(dateOfBirth) >= new Date()) e.dateOfBirth = 'Date of birth must be in the past'
-        if (!password) e.password = 'Password is required'
-        else if (password.length < 8) e.password = 'Password must be at least 8 characters'
+        if (!isLoggedIn) {
+            if (!password) e.password = 'Password is required'
+            else if (password.length < 8) e.password = 'Password must be at least 8 characters'
+        }
         return e
     }
 
@@ -64,7 +66,7 @@ export default function InviteClaim() {
                 {message && (
                     <>
                         <p className="text-green-600 mb-2 text-sm">{message}</p>
-                        <p className="text-gray-500 text-sm">Redirecting to login...</p>
+                        <p className="text-gray-500 text-sm">{isLoggedIn ? 'Redirecting...' : 'Redirecting to login...'}</p>
                     </>
                 )}
                 {!message && (
