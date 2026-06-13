@@ -1,4 +1,4 @@
-import {useState} from 'react'
+import {useEffect, useState} from 'react'
 import {useNavigate, useParams} from 'react-router-dom'
 import {Button} from '@/components/ui/button'
 import {Input} from '@/components/ui/input'
@@ -14,13 +14,22 @@ export default function InviteClaim() {
     const [message, setMessage] = useState('')
     const [serverError, setServerError] = useState('')
     const [loading, setLoading] = useState(false)
-    const isLoggedIn = !!localStorage.getItem('access_token')
+    const [userType, setUserType] = useState<'existing' | 'new' | null>(null)
+
+    useEffect(() => {
+        client.get(`/invite/${token}/claim/`)
+            .then(res => setUserType(res.data.user_type))
+            .catch(err => {
+                const msg = (err as { response?: { data?: { error?: string } } })?.response?.data?.error
+                setServerError(msg || 'This invite link is invalid.')
+            })
+    }, [token])
 
     const validate = () => {
         const e: typeof errors = {}
         if (!dateOfBirth) e.dateOfBirth = 'Date of birth is required'
         else if (new Date(dateOfBirth) >= new Date()) e.dateOfBirth = 'Date of birth must be in the past'
-        if (!isLoggedIn) {
+        if (userType === 'new') {
             if (!password) e.password = 'Password is required'
             else if (password.length < 8) e.password = 'Password must be at least 8 characters'
         }
@@ -44,7 +53,7 @@ export default function InviteClaim() {
             const companySlug = res.data.company_slug
             setMessage(res.data.message)
             setTimeout(() => {
-                if (isLoggedIn && companySlug) {
+                if (userType === 'existing' && companySlug) {
                     navigate(`/company/${companySlug}`)
                 } else {
                     navigate('/login')
@@ -57,19 +66,25 @@ export default function InviteClaim() {
         }
     }
 
+    const subtitle = userType === 'existing'
+        ? 'Verify your date of birth to join the company.'
+        : userType === 'new'
+        ? 'Set your password to activate your account.'
+        : 'Loading...'
+
     return (
         <div className="min-h-screen flex items-center justify-center bg-gray-100">
             <form onSubmit={handleSubmit} noValidate className="bg-white p-8 rounded shadow-md w-96">
                 <h1 className="text-2xl font-bold mb-2">Accept Invitation</h1>
-                <p className="text-gray-500 text-sm mb-6">Set your password to activate your account.</p>
+                <p className="text-gray-500 text-sm mb-6">{subtitle}</p>
                 {serverError && <p className="text-red-500 mb-4 text-sm">{serverError}</p>}
                 {message && (
                     <>
                         <p className="text-green-600 mb-2 text-sm">{message}</p>
-                        <p className="text-gray-500 text-sm">{isLoggedIn ? 'Redirecting...' : 'Redirecting to login...'}</p>
+                        <p className="text-gray-500 text-sm">{userType === 'existing' ? 'Redirecting...' : 'Redirecting to login...'}</p>
                     </>
                 )}
-                {!message && (
+                {!message && userType && (
                     <div className="flex flex-col gap-4">
                         <div>
                             <Label htmlFor="dateOfBirth">Date of Birth</Label>
@@ -81,7 +96,7 @@ export default function InviteClaim() {
                                    className="mt-1.5"/>
                             {errors.dateOfBirth && <p className="mt-1 text-xs text-red-600">{errors.dateOfBirth}</p>}
                         </div>
-                        {!isLoggedIn && (
+                        {userType === 'new' && (
                             <div>
                                 <Label htmlFor="password">New Password</Label>
                                 <Input id="password" type="password" placeholder="Choose a password"

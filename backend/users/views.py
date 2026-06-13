@@ -1,5 +1,5 @@
 import resend
-from companies.models import Invite
+from companies.models import Invite, Membership
 from decouple import config
 from django.utils import timezone
 from rest_framework import serializers
@@ -85,7 +85,7 @@ def verify_email(request, token):
         )
 
 
-@api_view(["POST"])
+@api_view(["GET", "POST"])
 @permission_classes([AllowAny])
 def claim_invite(request, token):
     try:
@@ -99,16 +99,30 @@ def claim_invite(request, token):
     if invite.is_expired:
         return Response({"error": "This invite has expired."}, status=400)
 
-    if User.objects.filter(email=invite.email, is_active=True).exists():
-        user = User.objects.get(email=invite.email)
-        date_of_birth = request.data.get("date_of_birth")
+    user_is_active = User.objects.filter(email=invite.email, is_active=True).exists()
+
+    if request.method == "GET":
+        return Response({"user_type": "existing" if user_is_active else "new"})
+
+    # POST
+    date_of_birth = request.data.get("date_of_birth")
+
+    if user_is_active:
+        try:
+            user = User.objects.get(email=invite.email, is_active=True)
+        except User.DoesNotExist:
+            return Response({"error": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
+
         if not date_of_birth:
-            return Response({"error": "date_of_birth and password are required."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "date_of_birth is required."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if user.date_of_birth is None:
+            return Response({"error": "Your account has no date of birth on record. Please contact support."},
+                            status=status.HTTP_400_BAD_REQUEST)
 
         if str(user.date_of_birth) != date_of_birth:
             return Response({"error": "Incorrect date of birth."}, status=status.HTTP_400_BAD_REQUEST)
 
-        from companies.models import Membership
         Membership.objects.get_or_create(
             user=user,
             company=invite.company,
@@ -125,7 +139,6 @@ def claim_invite(request, token):
         }, status=status.HTTP_200_OK)
 
     else:
-        date_of_birth = request.data.get("date_of_birth")
         password = request.data.get("password")
 
         if not date_of_birth or not password:
@@ -136,15 +149,18 @@ def claim_invite(request, token):
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
 
+        if user.date_of_birth is None:
+            return Response({"error": "Your account has no date of birth on record. Please contact support."},
+                            status=status.HTTP_400_BAD_REQUEST)
+
         if str(user.date_of_birth) != date_of_birth:
             return Response({"error": "Incorrect date of birth."}, status=status.HTTP_400_BAD_REQUEST)
 
         user.set_password(password)
         user.is_active = True
         user.is_verified = True
-        user.save()
+        user.save(update_fields=["password", "is_active", "is_verified"])
 
-        from companies.models import Membership
         Membership.objects.get_or_create(
             user=user,
             company=invite.company,
