@@ -10,6 +10,7 @@ from .views import (
     ticket_type_field_create,
     ticket_type_field_detail,
     add_comment,
+    request_detail,
 )
 
 urlpatterns = [
@@ -23,10 +24,10 @@ urlpatterns = [
 
     # Requests
     path("companies/<slug:slug>/requests/", RequestListCreateView.as_view(), name="request-list-create"),
+    path("companies/<slug:slug>/requests/<int:pk>/", request_detail, name="request-detail"),
     path("companies/<slug:slug>/requests/<int:pk>/approve/", ApproveRequestView.as_view(), name="approve-request"),
     path("companies/<slug:slug>/requests/<int:pk>/reject/", RejectRequestView.as_view(), name="reject-request"),
     path("companies/<slug:slug>/requests/<int:pk>/review/", ReviewRequestView.as_view(), name="review-request"),
-    path("companies/<slug:slug>/requests/<int:pk>/detail/", )
 
     # Comments
     path("companies/<slug:slug>/requests/<int:pk>/comments/", add_comment, name="add-comment"),

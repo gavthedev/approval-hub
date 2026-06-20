@@ -47,4 +47,4 @@ export interface RequestAttachment {
     created_at: string;
 }
 
-export type RequestStatus = 'submitted' | 'in_review' | 'approved' | 'rejected'
+export type RequestStatus = 'draft' | 'submitted' | 'in_review' | 'approved' | 'rejected' | 'cancelled'

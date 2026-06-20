@@ -29,10 +29,12 @@ interface TicketType {
 const roles = ['member', 'approver', 'admin']
 
 const statusConfig: Record<RequestStatus, { label: string; className: string }> = {
+    draft: {label: 'Draft', className: 'bg-slate-100 text-slate-700 border-slate-200'},
     submitted: {label: 'Submitted', className: 'bg-blue-100 text-blue-800 border-blue-200'},
     in_review: {label: 'In Review', className: 'bg-yellow-100 text-yellow-800 border-yellow-200'},
     approved: {label: 'Approved', className: 'bg-green-100 text-green-800 border-green-200'},
     rejected: {label: 'Rejected', className: 'bg-red-100 text-red-800 border-red-200'},
+    cancelled: {label: 'Cancelled', className: 'bg-slate-100 text-slate-500 border-slate-200'},
 }
 
 export default function CompanyRequests() {
@@ -566,7 +568,9 @@ export default function CompanyRequests() {
                     ) as [string, string][]
 
                     return (
-                        <Card key={request.id} className="border-slate-200 bg-white shadow-sm">
+                        <Card key={request.id}
+                              className="border-slate-200 bg-white shadow-sm cursor-pointer hover:border-slate-300 hover:shadow-md transition-shadow"
+                              onClick={() => navigate(`/company/${slug}/requests/${request.id}`)}>
                             <CardContent className="p-4">
                                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                                     <div className="min-w-0 flex-1">
@@ -619,7 +623,7 @@ export default function CompanyRequests() {
                                             </dl>
                                         )}
                                     </div>
-                                    <div className="flex shrink-0 gap-2">
+                                    <div className="flex shrink-0 gap-2" onClick={e => e.stopPropagation()}>
                                         {request.status === 'submitted' && (myRole === 'admin' || myRole === 'approver') && (
                                             <Button size="sm" variant="outline" onClick={() => handleReview(request.id)}
                                                     disabled={actioningId === request.id}

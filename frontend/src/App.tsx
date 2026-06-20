@@ -9,6 +9,7 @@ import InviteClaim from "./pages/InviteClaim";
 import ProtectedRoute from "./components/ProtectedRoute";
 import CompanySettings from "./pages/CompanySettings";
 import NewRequest from "./pages/NewRequest";
+import RequestDetail from "./pages/RequestDetail";
 
 export default function App() {
     return (
@@ -27,6 +28,7 @@ export default function App() {
                     <Route path="/company/:slug" element={<CompanyRequests/>}/>
                     <Route path="/company/:slug/settings" element={<CompanySettings/>}/>
                     <Route path="/company/:slug/new-request/:ticketTypeId" element={<NewRequest/>}/>
+                    <Route path="/company/:slug/requests/:id" element={<RequestDetail/>}/>
                 </Route>
             </Routes>
         </BrowserRouter>
