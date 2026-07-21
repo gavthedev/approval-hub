@@ -1,6 +1,6 @@
 import {useEffect, useRef, useState} from 'react'
 import {useNavigate, useParams} from 'react-router-dom'
-import {ArrowLeft, Check, Loader2, X} from 'lucide-react'
+import {ArrowLeft, Check, Loader2, Paperclip, X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
 import {Badge} from '@/components/ui/badge'
@@ -108,6 +108,12 @@ export default function RequestDetail() {
     const dataEntries = Object.entries(request.data).filter(
         ([key, value]) => !fileFieldNames.has(key) && typeof value === 'string' && value !== ''
     ) as [string, string][]
+
+    const formatBytes = (bytes: number) => {
+        if (bytes < 1024) return `${bytes} B`
+        if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`
+    }
 
     const formatDateTime = (dateStr: string) =>
         new Date(dateStr).toLocaleString('en-CH', {
@@ -230,6 +236,33 @@ export default function RequestDetail() {
                                 </li>
                             ))}
                         </ol>
+                    </CardContent>
+                </Card>
+            )}
+
+            {request.attachments.length > 0 && (
+                <Card className="mb-4 border-slate-200 bg-white shadow-sm">
+                    <CardHeader className="pb-3">
+                        <CardTitle className="text-base">Attachments</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                        <ul className="flex flex-col gap-2">
+                            {request.attachments.map((att) => (
+                                <li key={att.id}>
+                                    <a
+                                        href={att.file_url}
+                                        download={att.filename}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="flex items-center gap-2 rounded-md border border-slate-200 px-3 py-2 text-sm hover:bg-slate-50"
+                                    >
+                                        <Paperclip className="h-4 w-4 shrink-0 text-slate-400"/>
+                                        <span className="flex-1 truncate text-slate-900">{att.filename}</span>
+                                        <span className="shrink-0 text-xs text-slate-400">{formatBytes(att.file_size)}</span>
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
                     </CardContent>
                 </Card>
             )}

@@ -10,7 +10,7 @@ from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Request, TicketType, TicketTypeField
+from .models import Request, TicketType, TicketTypeField, RequestAttachment
 from .serializers import RequestSerializer, ApprovalSerializer, TicketTypeSerializer, TicketTypeFieldSerializer, \
     RequestCommentSerializer
 
@@ -137,6 +137,17 @@ class RequestListCreateView(ListCreateAPIView):
             "name", "field_type", "is_required", "order", "placeholder", "help_text"
         ))
 
+        # Handle both JSON ({data: {...}}) and multipart (data.<name> flat keys)
+        raw_data = self.request.data.get("data")
+        if isinstance(raw_data, dict):
+            data = raw_data
+        else:
+            data = {
+                key[5:]: value
+                for key, value in self.request.data.items()
+                if key.startswith("data.") and not self.request.FILES.get(key)
+            }
+
         user = self.request.user
         first_name = user.first_name
         last_name = user.last_name
@@ -150,10 +161,21 @@ class RequestListCreateView(ListCreateAPIView):
             created_by=user,
             ticket_type=ticket_type,
             schema_snapshot=schema_snapshot,
+            data=data,
         )
         instance.title = title
         instance.save(update_fields=["title"])
         instance.transition_to(Request.Status.SUBMITTED, changed_by=user)
+
+        for key, file in self.request.FILES.items():
+            if key.startswith("data."):
+                RequestAttachment.objects.create(
+                    request=instance,
+                    file=file,
+                    filename=file.name,
+                    file_size=file.size,
+                    uploaded_by=user,
+                )
 
 
 class ApproveRequestView(CreateAPIView):
@@ -238,4 +260,4 @@ def request_detail(request, slug, pk):
     if not membership:
         return Response({"error": "Not a member."}, status=status.HTTP_403_FORBIDDEN)
 
-    return Response(RequestSerializer(req).data)
+    return Response(RequestSerializer(req, context={'request': request}).data)

@@ -44,6 +44,7 @@ export interface RequestAttachment {
     id: number;
     filename: string;
     file_size: number;
+    file_url: string;
     created_at: string;
 }
 

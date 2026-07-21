@@ -39,9 +39,17 @@ class RequestStatusHistorySerializer(serializers.ModelSerializer):
 
 
 class RequestAttachmentSerializer(serializers.ModelSerializer):
+    file_url = serializers.SerializerMethodField()
+
+    def get_file_url(self, obj):
+        request = self.context.get('request')
+        if request:
+            return request.build_absolute_uri(obj.file.url)
+        return obj.file.url
+
     class Meta:
         model = RequestAttachment
-        fields = ["id", "filename", "file_size", "created_at"]
+        fields = ["id", "filename", "file_size", "created_at", "file_url"]
         read_only_fields = ["created_at"]
 
 
