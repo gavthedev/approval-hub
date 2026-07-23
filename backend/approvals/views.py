@@ -228,7 +228,14 @@ class ReviewRequestView(APIView):
     permission_classes = [IsAuthenticated, IsCompanyApprover]
 
     def post(self, request, slug, pk):
-        approval_request = Request.objects.get(id=pk)
+        try:
+            approval_request = Request.objects.get(id=pk, company__slug=slug, is_deleted=False)
+        except Request.DoesNotExist:
+            raise NotFound("Request not found.")
+
+        if not approval_request.can_transition_to(Request.Status.IN_REVIEW):
+            raise ValidationError(f"Cannot move a request with status '{approval_request.status}' to review.")
+
         approval_request.transition_to(
             Request.Status.IN_REVIEW,
             changed_by=request.user
