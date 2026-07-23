@@ -183,7 +183,12 @@ class ApproveRequestView(CreateAPIView):
     serializer_class = ApprovalSerializer
 
     def perform_create(self, serializer):
-        approval_request = Request.objects.get(id=self.kwargs["pk"])
+        try:
+            approval_request = Request.objects.get(
+                id=self.kwargs["pk"], company__slug=self.kwargs["slug"], is_deleted=False
+            )
+        except Request.DoesNotExist:
+            raise NotFound("Request not found.")
 
         if not approval_request.can_transition_to(Request.Status.APPROVED):
             raise ValidationError(f"Cannot approve a request with status '{approval_request.status}'.")
@@ -201,7 +206,12 @@ class RejectRequestView(CreateAPIView):
     serializer_class = ApprovalSerializer
 
     def perform_create(self, serializer):
-        approval_request = Request.objects.get(id=self.kwargs["pk"])
+        try:
+            approval_request = Request.objects.get(
+                id=self.kwargs["pk"], company__slug=self.kwargs["slug"], is_deleted=False
+            )
+        except Request.DoesNotExist:
+            raise NotFound("Request not found.")
 
         if not approval_request.can_transition_to(Request.Status.REJECTED):
             raise ValidationError(f"Cannot reject a request with status '{approval_request.status}'.")

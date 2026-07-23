@@ -21,7 +21,8 @@
       "Bash(python manage.py makemigrations approvals)",
       "Bash(python -c \"import approvals.views; import approvals.serializers; import approvals.models; print\\('Import check OK'\\)\")",
       "Bash(python manage.py check)",
-      "Skill(code-review)"
+      "Skill(code-review)",
+      "Bash(xargs wc -l)"
     ]
   }
 }
