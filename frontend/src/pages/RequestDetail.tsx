@@ -50,6 +50,7 @@ export default function RequestDetail() {
     const refresh = () =>
         client.get(`/companies/${slug}/requests/${id}/`).then(res => setRequest(res.data))
 
+
     useEffect(() => {
         Promise.all([
             client.get(`/companies/${slug}/requests/${id}/`),
