@@ -1,7 +1,7 @@
 from datetime import date
 
 from companies.models import Company, Membership
-from companies.permissions import IsCompanyMember, IsCompanyApprover
+from companies.permissions import IsCompanyMember, IsCompanyApprover, IsCompanyAdmin
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.exceptions import ValidationError, NotFound
@@ -18,41 +18,28 @@ from .serializers import RequestSerializer, ApprovalSerializer, TicketTypeSerial
 # ── Ticket Types ────────────────────────────────────────────────
 
 @api_view(["GET", "POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsCompanyMember])
 def ticket_type_list_create(request, slug):
-    try:
-        company = Company.objects.get(slug=slug)
-    except Company.DoesNotExist:
-        raise NotFound("Company not found.")
-
-    membership = company.memberships.filter(user=request.user, is_active=True).first()
-    if not membership:
-        return Response({"error": "Not a member."}, status=status.HTTP_403_FORBIDDEN)
-
     if request.method == "GET":
-        ticket_types = TicketType.objects.filter(company=company, is_deleted=False)
+        ticket_types = TicketType.objects.filter(company__slug=slug, is_deleted=False)
         return Response(TicketTypeSerializer(ticket_types, many=True).data)
 
-    if membership.role != "admin":
+    if request.membership.role != "admin":
         return Response({"error": "Only admins can create ticket types."}, status=status.HTTP_403_FORBIDDEN)
 
     serializer = TicketTypeSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
-    serializer.save(company=company, created_by=request.user)
+    serializer.save(company=request.membership.company, created_by=request.user)
     return Response(serializer.data, status=status.HTTP_201_CREATED)
 
 
 @api_view(["PUT", "DELETE"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsCompanyAdmin])
 def ticket_type_detail(request, slug, pk):
     try:
         ticket_type = TicketType.objects.get(id=pk, company__slug=slug, is_deleted=False)
     except TicketType.DoesNotExist:
         raise NotFound("Ticket type not found.")
-
-    membership = ticket_type.company.memberships.filter(user=request.user, is_active=True, role="admin").first()
-    if not membership:
-        return Response({"error": "Only admins can modify ticket types."}, status=status.HTTP_403_FORBIDDEN)
 
     if request.method == "DELETE":
         ticket_type.is_deleted = True
@@ -68,16 +55,12 @@ def ticket_type_detail(request, slug, pk):
 # ── Ticket Type Fields ───────────────────────────────────────────
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsCompanyAdmin])
 def ticket_type_field_create(request, slug, pk):
     try:
         ticket_type = TicketType.objects.get(id=pk, company__slug=slug, is_deleted=False)
     except TicketType.DoesNotExist:
         raise NotFound("Ticket type not found.")
-
-    membership = ticket_type.company.memberships.filter(user=request.user, is_active=True, role="admin").first()
-    if not membership:
-        return Response({"error": "Only admins can add fields."}, status=status.HTTP_403_FORBIDDEN)
 
     serializer = TicketTypeFieldSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -86,16 +69,12 @@ def ticket_type_field_create(request, slug, pk):
 
 
 @api_view(["PUT", "DELETE"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsCompanyAdmin])
 def ticket_type_field_detail(request, slug, pk, field_id):
     try:
         field = TicketTypeField.objects.get(id=field_id, ticket_type__id=pk, ticket_type__company__slug=slug)
     except TicketTypeField.DoesNotExist:
         raise NotFound("Field not found.")
-
-    membership = field.ticket_type.company.memberships.filter(user=request.user, is_active=True, role="admin").first()
-    if not membership:
-        return Response({"error": "Only admins can modify fields."}, status=status.HTTP_403_FORBIDDEN)
 
     if request.method == "DELETE":
         field.delete()
@@ -246,16 +225,12 @@ class ReviewRequestView(APIView):
 # ── Comments ─────────────────────────────────────────────────────
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsCompanyMember])
 def add_comment(request, slug, pk):
     try:
         approval_request = Request.objects.get(id=pk, company__slug=slug, is_deleted=False)
     except Request.DoesNotExist:
         raise NotFound("Request not found.")
-
-    membership = approval_request.company.memberships.filter(user=request.user, is_active=True).first()
-    if not membership:
-        return Response({"error": "Not a member."}, status=status.HTTP_403_FORBIDDEN)
 
     serializer = RequestCommentSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -266,15 +241,11 @@ def add_comment(request, slug, pk):
 # ── Details ─────────────────────────────────────────────────────
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsAuthenticated, IsCompanyMember])
 def request_detail(request, slug, pk):
     try:
         req = Request.objects.get(id=pk, company__slug=slug, is_deleted=False)
     except Request.DoesNotExist:
         raise NotFound("Request not found.")
-
-    membership = req.company.memberships.filter(user=request.user, is_active=True).first()
-    if not membership:
-        return Response({"error": "Not a member."}, status=status.HTTP_403_FORBIDDEN)
 
     return Response(RequestSerializer(req, context={'request': request}).data)

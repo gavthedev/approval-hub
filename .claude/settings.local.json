@@ -23,7 +23,14 @@
       "Bash(python manage.py check)",
       "Skill(code-review)",
       "Bash(xargs wc -l)",
-      "Bash(python -m pytest -q)"
+      "Bash(python -m pytest -q)",
+      "Bash(git -C \"C:\\\\My Projects\\\\approval-hub\" log --oneline -20)",
+      "Bash(python manage.py test approvals companies users)",
+      "Bash(python -m pytest approvals companies users -q)",
+      "Bash(python -c \"import ast; ast.parse\\(open\\('approvals/views.py'\\).read\\(\\)\\); ast.parse\\(open\\('companies/permissions.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(powershell -Command \"Get-Process -Name 'Docker Desktop' -ErrorAction SilentlyContinue\")",
+      "Read(//c/Program Files/Docker/Docker/**)",
+      "Bash(powershell -Command \"Start-Process 'C:\\\\\\\\Program Files\\\\\\\\Docker\\\\\\\\Docker\\\\\\\\Docker Desktop.exe'\")"
     ]
   }
 }
