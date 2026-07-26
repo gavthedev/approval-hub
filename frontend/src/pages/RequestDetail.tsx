@@ -47,6 +47,7 @@ export default function RequestDetail() {
         return 'Something went wrong. Please try again.'
     }
 
+
     const refresh = () =>
         client.get(`/companies/${slug}/requests/${id}/`).then(res => setRequest(res.data))
 
