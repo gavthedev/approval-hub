@@ -85,6 +85,34 @@ def verify_email(request, token):
         )
 
 
+def _verify_dob(user, date_of_birth):
+    if user.date_of_birth is None:
+        return Response({"error": "Your account has no date of birth on record. Please contact support."},
+                        status=status.HTTP_400_BAD_REQUEST)
+
+    if str(user.date_of_birth) != date_of_birth:
+        return Response({"error": "Incorrect date of birth."}, status=status.HTTP_400_BAD_REQUEST)
+
+    return None
+
+
+def _finalize_invite_claim(invite, user):
+    Membership.objects.get_or_create(
+        user=user,
+        company=invite.company,
+        defaults={"role": invite.role}
+    )
+    invite.is_used = True
+    invite.claimed_by = user
+    invite.claimed_at = timezone.now()
+    invite.save()
+
+    return Response({
+        "message": "Invite accepted! Welcome to the team.",
+        "company_slug": invite.company.slug
+    }, status=status.HTTP_200_OK)
+
+
 @api_view(["GET", "POST"])
 @permission_classes([AllowAny])
 def claim_invite(request, token):
@@ -116,27 +144,11 @@ def claim_invite(request, token):
         if not date_of_birth:
             return Response({"error": "date_of_birth is required."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if user.date_of_birth is None:
-            return Response({"error": "Your account has no date of birth on record. Please contact support."},
-                            status=status.HTTP_400_BAD_REQUEST)
+        error = _verify_dob(user, date_of_birth)
+        if error:
+            return error
 
-        if str(user.date_of_birth) != date_of_birth:
-            return Response({"error": "Incorrect date of birth."}, status=status.HTTP_400_BAD_REQUEST)
-
-        Membership.objects.get_or_create(
-            user=user,
-            company=invite.company,
-            defaults={"role": invite.role}
-        )
-        invite.is_used = True
-        invite.claimed_by = user
-        invite.claimed_at = timezone.now()
-        invite.save()
-
-        return Response({
-            "message": "Invite accepted! Welcome to the team.",
-            "company_slug": invite.company.slug
-        }, status=status.HTTP_200_OK)
+        return _finalize_invite_claim(invite, user)
 
     else:
         password = request.data.get("password")
@@ -149,33 +161,17 @@ def claim_invite(request, token):
         except User.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if user.date_of_birth is None:
-            return Response({"error": "Your account has no date of birth on record. Please contact support."},
-                            status=status.HTTP_400_BAD_REQUEST)
-
-        if str(user.date_of_birth) != date_of_birth:
-            return Response({"error": "Incorrect date of birth."}, status=status.HTTP_400_BAD_REQUEST)
+        error = _verify_dob(user, date_of_birth)
+        if error:
+            return error
 
         user.set_password(password)
         user.is_active = True
         user.is_verified = True
         user.save(update_fields=["password", "is_active", "is_verified"])
 
-        Membership.objects.get_or_create(
-            user=user,
-            company=invite.company,
-            defaults={"role": invite.role}
-        )
+        return _finalize_invite_claim(invite, user)
 
-        invite.is_used = True
-        invite.claimed_by = user
-        invite.claimed_at = timezone.now()
-        invite.save()
-
-        return Response({
-            "message": "Invite accepted! Welcome to the team.",
-            "company_slug": invite.company.slug
-        }, status=status.HTTP_200_OK)
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):

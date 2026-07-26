@@ -29,6 +29,33 @@ class CompanyListCreateView(ListCreateAPIView):
             role=Membership.Role.ADMIN
         )
 
+
+def _create_invite(company, email, role, created_by):
+    return Invite.objects.create(
+        company=company,
+        email=email,
+        role=role,
+        created_by=created_by,
+        expires_at=timezone.now() + timezone.timedelta(days=7),
+    )
+
+
+def _send_invite_email(company, email, first_name, invite):
+    resend.Emails.send({
+        "from": "noreply@approvalhub.ch",
+        "to": email,
+        "subject": f"You've been invited to {company.name} on ApprovalHub",
+        "html": f"""
+            <h2>Welcome to {company.name}!</h2>
+            <p>Hi {first_name},</p>
+            <p>You have been invited to join <strong>{company.name}</strong> on ApprovalHub.</p>
+            <p>Click the link below to set up your account:</p>
+            <a href="https://approvalhub.ch/invite/{invite.token}">Accept Invitation</a>
+            <p>This link expires in 7 days.</p>
+        """
+    })
+
+
 @api_view(["POST"])
 @permission_classes([IsAuthenticated])
 def invite_member(request, slug):
@@ -61,33 +88,8 @@ def invite_member(request, slug):
     if Membership.objects.filter(user__email=email, company=company).exists():
         return Response({"error": "This user is already a member in this company"}, status=400)
 
-    if User.objects.filter(email=email).exists():
-
-        invite = Invite.objects.create(
-            company=company,
-            email=email,
-            role=role,
-            created_by=request.user,
-            expires_at=timezone.now() + timezone.timedelta(days=7),
-        )
-
-        resend.Emails.send({
-            "from": "noreply@approvalhub.ch",
-            "to": email,
-            "subject": f"You've been invited to {company.name} on ApprovalHub",
-            "html": f"""
-                        <h2>Welcome to {company.name}!</h2>
-                        <p>Hi {first_name},</p>
-                        <p>You have been invited to join <strong>{company.name}</strong> on ApprovalHub.</p>
-                        <p>Click the link below to set up your account:</p>
-                        <a href="https://approvalhub.ch/invite/{invite.token}">Accept Invitation</a>
-                        <p>This link expires in 7 days.</p>
-                    """
-        })
-
-    else:
-
-        user = User.objects.create_user(
+    if not User.objects.filter(email=email).exists():
+        User.objects.create_user(
             email=email,
             password=None,
             first_name=first_name,
@@ -97,28 +99,8 @@ def invite_member(request, slug):
             is_active=False,
         )
 
-        invite = Invite.objects.create(
-            company=company,
-            email=email,
-            role=role,
-            created_by=request.user,
-            expires_at=timezone.now() + timezone.timedelta(days=7),
-        )
-
-        resend.Emails.send({
-            "from": "noreply@approvalhub.ch",
-            "to": email,
-            "subject": f"You've been invited to {company.name} on ApprovalHub",
-            "html": f"""
-                <h2>Welcome to {company.name}!</h2>
-                <p>Hi {first_name},</p>
-                <p>You have been invited to join <strong>{company.name}</strong> on ApprovalHub.</p>
-                <p>Click the link below to set up your account:</p>
-                <a href="https://approvalhub.ch/invite/{invite.token}">Accept Invitation</a>
-                <p>This link expires in 7 days.</p>
-            """
-        })
-    
+    invite = _create_invite(company, email, role, request.user)
+    _send_invite_email(company, email, first_name, invite)
 
     return Response(
         {"message": f"Invitation sent to {email}."},
