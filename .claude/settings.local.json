@@ -31,7 +31,8 @@
       "Bash(powershell -Command \"Get-Process -Name 'Docker Desktop' -ErrorAction SilentlyContinue\")",
       "Read(//c/Program Files/Docker/Docker/**)",
       "Bash(powershell -Command \"Start-Process 'C:\\\\\\\\Program Files\\\\\\\\Docker\\\\\\\\Docker\\\\\\\\Docker Desktop.exe'\")",
-      "Bash(python -c \"import ast; ast.parse\\(open\\('users/views.py'\\).read\\(\\)\\); print\\('OK'\\)\")"
+      "Bash(python -c \"import ast; ast.parse\\(open\\('users/views.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
+      "Bash(git fetch *)"
     ]
   }
 }
