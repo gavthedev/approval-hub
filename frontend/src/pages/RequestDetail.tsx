@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react'
+import {useEffect, useState} from 'react'
 import {useNavigate, useParams} from 'react-router-dom'
 import {ArrowLeft, Check, Loader2, Paperclip, X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
@@ -6,17 +6,10 @@ import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
 import {Badge} from '@/components/ui/badge'
 import {Textarea} from '@/components/ui/textarea'
 import {cn} from '@/lib/utils'
+import {apiError, getDataEntries, statusConfig} from '@/lib/requestDisplay'
+import {useNotification} from '@/hooks/useNotification'
 import client from '@/api/client'
-import type {Request, RequestStatus} from '@/types'
-
-const statusConfig: Record<RequestStatus, {label: string; className: string}> = {
-    draft: {label: 'Draft', className: 'bg-slate-100 text-slate-700 border-slate-200'},
-    submitted: {label: 'Submitted', className: 'bg-blue-100 text-blue-800 border-blue-200'},
-    in_review: {label: 'In Review', className: 'bg-yellow-100 text-yellow-800 border-yellow-200'},
-    approved: {label: 'Approved', className: 'bg-green-100 text-green-800 border-green-200'},
-    rejected: {label: 'Rejected', className: 'bg-red-100 text-red-800 border-red-200'},
-    cancelled: {label: 'Cancelled', className: 'bg-slate-100 text-slate-500 border-slate-200'},
-}
+import type {Request} from '@/types'
 
 export default function RequestDetail() {
     const {slug, id} = useParams<{slug: string; id: string}>()
@@ -28,25 +21,7 @@ export default function RequestDetail() {
     const [comment, setComment] = useState('')
     const [submittingComment, setSubmittingComment] = useState(false)
     const [actioning, setActioning] = useState<'review' | 'approve' | 'reject' | null>(null)
-    const [notification, setNotification] = useState<{type: 'success' | 'error'; message: string} | null>(null)
-    const notifTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-    const notify = (type: 'success' | 'error', message: string) => {
-        if (notifTimer.current) clearTimeout(notifTimer.current)
-        setNotification({type, message})
-        notifTimer.current = setTimeout(() => setNotification(null), 4000)
-    }
-
-    const apiError = (err: unknown): string => {
-        const data = (err as {response?: {data?: Record<string, unknown>}})?.response?.data
-        if (data) {
-            const first = Object.values(data)[0]
-            if (typeof first === 'string') return first
-            if (Array.isArray(first) && typeof first[0] === 'string') return first[0]
-        }
-        return 'Something went wrong. Please try again.'
-    }
-
+    const {notification, notify, dismiss} = useNotification()
 
     const refresh = () =>
         client.get(`/companies/${slug}/requests/${id}/`).then(res => setRequest(res.data))
@@ -56,12 +31,11 @@ export default function RequestDetail() {
         Promise.all([
             client.get(`/companies/${slug}/requests/${id}/`),
             client.get(`/companies/${slug}/my-role/`),
-            client.get('/companies/'),
-        ]).then(([reqRes, roleRes, companiesRes]) => {
+            client.get(`/companies/${slug}/`),
+        ]).then(([reqRes, roleRes, companyRes]) => {
             setRequest(reqRes.data)
             setMyRole(roleRes.data.role)
-            const company = (companiesRes.data as {slug: string; name: string}[]).find(c => c.slug === slug)
-            if (company) setCompanyName(company.name)
+            setCompanyName(companyRes.data.name)
         }).catch(() => navigate(`/company/${slug}`))
     }, [slug, id, navigate])
 
@@ -101,15 +75,7 @@ export default function RequestDetail() {
 
     const config = statusConfig[request.status] ?? {label: request.status, className: 'bg-slate-100 text-slate-700 border-slate-200'}
     const isApprover = myRole === 'admin' || myRole === 'approver'
-
-    const fileFieldNames = new Set(
-        (request.schema_snapshot as {name: string; field_type: string}[])
-            .filter(f => f.field_type === 'file')
-            .map(f => f.name)
-    )
-    const dataEntries = Object.entries(request.data).filter(
-        ([key, value]) => !fileFieldNames.has(key) && typeof value === 'string' && value !== ''
-    ) as [string, string][]
+    const dataEntries = getDataEntries(request)
 
     const formatBytes = (bytes: number) => {
         if (bytes < 1024) return `${bytes} B`
@@ -133,7 +99,7 @@ export default function RequestDetail() {
                         : 'border-red-200 bg-red-50 text-red-800'
                 )}>
                     <span>{notification.message}</span>
-                    <button onClick={() => setNotification(null)} className="ml-4 shrink-0 opacity-60 hover:opacity-100">
+                    <button onClick={dismiss} className="ml-4 shrink-0 opacity-60 hover:opacity-100">
                         <X className="h-4 w-4"/>
                     </button>
                 </div>

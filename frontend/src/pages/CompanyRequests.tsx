@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from 'react'
+import {useEffect, useState} from 'react'
 import {useLocation, useNavigate, useParams} from 'react-router-dom'
 import {ArrowLeft, Check, Loader2, Plus, Settings, UserPlus, X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
@@ -9,6 +9,8 @@ import {Badge} from '@/components/ui/badge'
 import {Textarea} from '@/components/ui/textarea'
 import {Select, SelectContent, SelectItem, SelectTrigger, SelectValue} from '@/components/ui/select'
 import {cn} from '@/lib/utils'
+import {apiError, getDataEntries, statusConfig} from '@/lib/requestDisplay'
+import {useNotification} from '@/hooks/useNotification'
 import client from '@/api/client'
 import type {Request, RequestStatus} from '@/types'
 
@@ -27,15 +29,6 @@ interface TicketType {
 }
 
 const roles = ['member', 'approver', 'admin']
-
-const statusConfig: Record<RequestStatus, { label: string; className: string }> = {
-    draft: {label: 'Draft', className: 'bg-slate-100 text-slate-700 border-slate-200'},
-    submitted: {label: 'Submitted', className: 'bg-blue-100 text-blue-800 border-blue-200'},
-    in_review: {label: 'In Review', className: 'bg-yellow-100 text-yellow-800 border-yellow-200'},
-    approved: {label: 'Approved', className: 'bg-green-100 text-green-800 border-green-200'},
-    rejected: {label: 'Rejected', className: 'bg-red-100 text-red-800 border-red-200'},
-    cancelled: {label: 'Cancelled', className: 'bg-slate-100 text-slate-500 border-slate-200'},
-}
 
 export default function CompanyRequests() {
     const {slug} = useParams<{ slug: string }>()
@@ -64,14 +57,7 @@ export default function CompanyRequests() {
     const [submittingInvite, setSubmittingInvite] = useState(false)
     const [actioningId, setActioningId] = useState<number | null>(null)
     const [expandedFields, setExpandedFields] = useState<Set<string>>(new Set())
-    const [notification, setNotification] = useState<{ type: 'success' | 'error'; message: string } | null>(null)
-    const notifTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-    const notify = (type: 'success' | 'error', message: string) => {
-        if (notifTimer.current) clearTimeout(notifTimer.current)
-        setNotification({type, message})
-        notifTimer.current = setTimeout(() => setNotification(null), 4000)
-    }
+    const {notification, notify, dismiss} = useNotification()
 
     const formatShortDate = (dateStr: string) => {
         const d = new Date(dateStr)
@@ -124,16 +110,6 @@ export default function CompanyRequests() {
         return e
     }
 
-    const apiError = (err: unknown): string => {
-        const data = (err as { response?: { data?: Record<string, unknown> } })?.response?.data
-        if (data) {
-            const first = Object.values(data)[0]
-            if (typeof first === 'string') return first
-            if (Array.isArray(first) && typeof first[0] === 'string') return first[0]
-        }
-        return 'Something went wrong. Please try again.'
-    }
-
     useEffect(() => {
         client.get(`/companies/${slug}/requests/`).then((res) => {
             setRequests(res.data)
@@ -143,9 +119,8 @@ export default function CompanyRequests() {
             setMyRole(res.data.role)
         }).catch(console.error)
 
-        client.get('/companies/').then((res) => {
-            const company = (res.data as { slug: string; name: string }[]).find((c) => c.slug === slug)
-            if (company) setCompanyName(company.name)
+        client.get(`/companies/${slug}/`).then((res) => {
+            setCompanyName(res.data.name)
         }).catch(console.error)
 
         client.get(`/companies/${slug}/ticket-types/`).then((res) => {
@@ -291,7 +266,7 @@ export default function CompanyRequests() {
                         : 'border-red-200 bg-red-50 text-red-800'
                 )}>
                     <span>{notification.message}</span>
-                    <button onClick={() => setNotification(null)}
+                    <button onClick={dismiss}
                             className="ml-4 shrink-0 opacity-60 hover:opacity-100">
                         <X className="h-4 w-4"/>
                     </button>
@@ -558,14 +533,7 @@ export default function CompanyRequests() {
 
             <div className="flex flex-col gap-3">
                 {requests.map((request) => {
-                    const fileFieldNames = new Set(
-                        (request.schema_snapshot as { name: string; field_type: string }[])
-                            .filter(f => f.field_type === 'file')
-                            .map(f => f.name)
-                    )
-                    const dataEntries = Object.entries(request.data).filter(
-                        ([key, value]) => !fileFieldNames.has(key) && typeof value === 'string' && value !== ''
-                    ) as [string, string][]
+                    const dataEntries = getDataEntries(request)
 
                     return (
                         <Card key={request.id}

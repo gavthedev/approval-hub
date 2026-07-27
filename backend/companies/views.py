@@ -9,6 +9,7 @@ from rest_framework.response import Response
 from users.models import User
 
 from .models import Company, Membership, Invite
+from .permissions import IsCompanyMember
 from .serializers import CompanySerializer
 
 resend.api_key = config('RESEND_API_KEY')
@@ -106,6 +107,12 @@ def invite_member(request, slug):
         {"message": f"Invitation sent to {email}."},
         status=status.HTTP_201_CREATED
     )
+
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated, IsCompanyMember])
+def company_detail(request, slug):
+    return Response(CompanySerializer(request.membership.company, context={"request": request}).data)
 
 
 @api_view(["GET"])
