@@ -49,3 +49,31 @@ export interface RequestAttachment {
 }
 
 export type RequestStatus = 'draft' | 'submitted' | 'in_review' | 'approved' | 'rejected' | 'cancelled'
+
+export type HomeItemType = 'shortcut' | 'pinned_request' | 'stat'
+
+export type StatKind = 'my_open_requests' | 'pending_my_approval'
+
+export interface PinnedRequestSummary {
+    id: number;
+    title: string;
+    status: RequestStatus;
+    ticket_type_name: string | null;
+    company_slug: string;
+    company_name: string;
+}
+
+export interface HomeItem {
+    id: number;
+    item_type: HomeItemType;
+    order: number;
+    label: string;
+    url: string;
+    company: number | null;
+    company_slug: string | null;
+    company_name: string | null;
+    request_detail: PinnedRequestSummary | null;
+    stat_kind: StatKind | '';
+    value: number | null;
+    created_at: string;
+}

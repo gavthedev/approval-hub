@@ -3,6 +3,7 @@ import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Verify from "./pages/Verify";
 import {Dashboard} from "./pages/Dashboard";
+import Home from "./pages/Home";
 import {Layout} from "./components/Layout";
 import CompanyRequests from "./pages/CompanyRequests";
 import InviteClaim from "./pages/InviteClaim";
@@ -24,7 +25,8 @@ export default function App() {
                         <Layout/>
                     </ProtectedRoute>
                 }>
-                    <Route path="/" element={<Dashboard/>}/>
+                    <Route path="/" element={<Home/>}/>
+                    <Route path="/companies" element={<Dashboard/>}/>
                     <Route path="/company/:slug" element={<CompanyRequests/>}/>
                     <Route path="/company/:slug/settings" element={<CompanySettings/>}/>
                     <Route path="/company/:slug/new-request/:ticketTypeId" element={<NewRequest/>}/>

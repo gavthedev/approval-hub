@@ -1,6 +1,6 @@
 import {useEffect, useState} from 'react'
 import {NavLink, Outlet, useNavigate} from 'react-router-dom'
-import {Building2, ChevronDown, ChevronRight, LogOut, User} from 'lucide-react'
+import {Building2, ChevronDown, ChevronRight, Home, LogOut, User} from 'lucide-react'
 import {cn} from '@/lib/utils'
 import client from '@/api/client'
 
@@ -92,6 +92,20 @@ export function Layout() {
                 </div>
 
                 <nav className="flex-1 overflow-y-auto px-3 py-4">
+                    <NavLink
+                        to="/"
+                        end
+                        className={({isActive}) => cn(
+                            'mb-3 flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
+                            isActive
+                                ? 'bg-white/10 text-white'
+                                : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                        )}
+                    >
+                        <Home className="h-4 w-4 shrink-0"/>
+                        Home
+                    </NavLink>
+
                     <p className="mb-1 px-3 text-xs font-semibold uppercase tracking-wider text-slate-500">
                         Companies
                     </p>
@@ -232,6 +246,15 @@ export function Layout() {
             <nav
                 className="fixed bottom-0 left-0 right-0 z-40 flex h-16 items-center justify-around border-t border-slate-200 bg-white md:hidden">
                 <NavLink to="/"
+                         end
+                         className={({isActive}) => cn(
+                             'flex h-11 w-11 flex-col items-center justify-center rounded-lg transition-colors',
+                             isActive ? 'text-[#0f172a]' : 'text-slate-500'
+                         )}>
+                    <Home className="h-6 w-6"/>
+                    <span className="mt-0.5 text-[10px] font-medium">Home</span>
+                </NavLink>
+                <NavLink to="/companies"
                          className={({isActive}) => cn(
                              'flex h-11 w-11 flex-col items-center justify-center rounded-lg transition-colors',
                              isActive ? 'text-[#0f172a]' : 'text-slate-500'
