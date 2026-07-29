@@ -34,7 +34,8 @@
       "Bash(python -c \"import ast; ast.parse\\(open\\('users/views.py'\\).read\\(\\)\\); print\\('OK'\\)\")",
       "Bash(git fetch *)",
       "Bash(python -c ' *)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "WebSearch"
     ]
   }
 }
