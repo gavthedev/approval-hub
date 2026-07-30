@@ -15,7 +15,6 @@ def test_request_state_machine():
         company=company,
         created_by=user,
         title="Test",
-        description="Test",
     )
     # check status
     assert req.status == Request.Status.DRAFT
