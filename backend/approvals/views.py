@@ -222,15 +222,27 @@ class ReviewRequestView(APIView):
         return Response({"status": "in_review"})
 
 
+def _get_visible_request(request, slug, pk):
+    """Scope a single-request lookup the same way the list view scopes its
+    queryset: members only ever get their own requests, approvers/admins get
+    the whole company. Without this a member could read or comment on any
+    other member's request by guessing its id.
+    """
+    qs = Request.objects.filter(company__slug=slug, is_deleted=False)
+    if request.membership.role == "member":
+        qs = qs.filter(created_by=request.user)
+    try:
+        return qs.get(id=pk)
+    except Request.DoesNotExist:
+        raise NotFound("Request not found.")
+
+
 # ── Comments ─────────────────────────────────────────────────────
 
 @api_view(["POST"])
 @permission_classes([IsAuthenticated, IsCompanyMember])
 def add_comment(request, slug, pk):
-    try:
-        approval_request = Request.objects.get(id=pk, company__slug=slug, is_deleted=False)
-    except Request.DoesNotExist:
-        raise NotFound("Request not found.")
+    approval_request = _get_visible_request(request, slug, pk)
 
     serializer = RequestCommentSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
@@ -243,9 +255,5 @@ def add_comment(request, slug, pk):
 @api_view(["GET"])
 @permission_classes([IsAuthenticated, IsCompanyMember])
 def request_detail(request, slug, pk):
-    try:
-        req = Request.objects.get(id=pk, company__slug=slug, is_deleted=False)
-    except Request.DoesNotExist:
-        raise NotFound("Request not found.")
-
+    req = _get_visible_request(request, slug, pk)
     return Response(RequestSerializer(req, context={'request': request}).data)

@@ -252,6 +252,32 @@ def test_add_comment():
 
 
 @pytest.mark.django_db
+def test_add_comment_member_cannot_comment_on_another_members_request():
+    client = APIClient()
+    owner = User.objects.create_user(email="commentowner@test.com", password="pass")
+    other_member = User.objects.create_user(email="commentother@test.com", password="pass")
+    approver = User.objects.create_user(email="commentapprover@test.com", password="pass")
+    company = Company.objects.create(name="Comment Boundary Co", created_by=owner)
+    Membership.objects.create(user=owner, company=company, role="member")
+    Membership.objects.create(user=other_member, company=company, role="member")
+    Membership.objects.create(user=approver, company=company, role="approver")
+    req = Request.objects.create(company=company, created_by=owner, title="Test",
+                                 status=Request.Status.SUBMITTED)
+
+    # a fellow member (not the owner) cannot comment - not 403, to avoid confirming the id exists
+    client.force_authenticate(user=other_member)
+    res = client.post(f"/api/companies/{company.slug}/requests/{req.id}/comments/", {"text": "Snooping"})
+    assert res.status_code == 404
+    assert req.comments.count() == 0
+
+    # an approver can comment on any member's request
+    client.force_authenticate(user=approver)
+    res = client.post(f"/api/companies/{company.slug}/requests/{req.id}/comments/", {"text": "Approved"})
+    assert res.status_code == 201
+    assert req.comments.count() == 1
+
+
+@pytest.mark.django_db
 def test_request_detail_view():
     client = APIClient()
     member = User.objects.create_user(email="detailmember@test.com", password="pass")
@@ -277,3 +303,31 @@ def test_request_detail_view():
     res = client.get(f"/api/companies/{company.slug}/requests/{req.id}/")
     assert res.status_code == 200
     assert res.data["title"] == "Detail Test"
+
+
+@pytest.mark.django_db
+def test_request_detail_view_member_cannot_view_another_members_request():
+    client = APIClient()
+    owner = User.objects.create_user(email="detailowner@test.com", password="pass")
+    other_member = User.objects.create_user(email="detailother@test.com", password="pass")
+    approver = User.objects.create_user(email="detailapprover@test.com", password="pass")
+    admin = User.objects.create_user(email="detailadmin@test.com", password="pass")
+    company = Company.objects.create(name="Detail Boundary Co", created_by=owner)
+    Membership.objects.create(user=owner, company=company, role="member")
+    Membership.objects.create(user=other_member, company=company, role="member")
+    Membership.objects.create(user=approver, company=company, role="approver")
+    Membership.objects.create(user=admin, company=company, role="admin")
+    req = Request.objects.create(company=company, created_by=owner, title="Detail Test",
+                                 status=Request.Status.SUBMITTED)
+
+    # a fellow member (not the owner) gets 404, same as a nonexistent id - not a peer-member leak
+    client.force_authenticate(user=other_member)
+    res = client.get(f"/api/companies/{company.slug}/requests/{req.id}/")
+    assert res.status_code == 404
+
+    # approvers and admins can view any member's request
+    for viewer in (approver, admin):
+        client.force_authenticate(user=viewer)
+        res = client.get(f"/api/companies/{company.slug}/requests/{req.id}/")
+        assert res.status_code == 200
+        assert res.data["title"] == "Detail Test"
