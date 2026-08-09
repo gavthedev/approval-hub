@@ -1,8 +1,7 @@
 import pytest
-from rest_framework.test import APIClient
-
 from approvals.models import Request, TicketType
 from companies.models import Company, Membership
+from rest_framework.test import APIClient
 from users.models import User
 
 from .models import HomeItem
@@ -69,6 +68,59 @@ def test_create_pinned_request_foreign_company_rejected():
     client.force_authenticate(user=user)
     res = client.post("/api/home-items/", {"item_type": "pinned_request", "request": foreign_req.id})
     assert res.status_code == 400
+
+
+@pytest.mark.django_db
+def test_create_pinned_request_other_member_same_company_rejected():
+    client = APIClient()
+    owner = User.objects.create_user(email="pinowner3@test.com", password="pass")
+    other_member = User.objects.create_user(email="pinother3@test.com", password="pass")
+    approver = User.objects.create_user(email="pinapprover3@test.com", password="pass")
+    company = Company.objects.create(name="Shared Pin Co", created_by=owner)
+    Membership.objects.create(user=owner, company=company, role="member")
+    Membership.objects.create(user=other_member, company=company, role="member")
+    Membership.objects.create(user=approver, company=company, role="approver")
+    req = Request.objects.create(company=company, created_by=owner,
+                                 status=Request.Status.SUBMITTED, title="Owner's request")
+
+    # a fellow member (not the owner) cannot pin it - not 403, mirrors the
+    # request-detail boundary of not confirming a peer's request exists
+    client.force_authenticate(user=other_member)
+    res = client.post("/api/home-items/", {"item_type": "pinned_request", "request": req.id})
+    assert res.status_code == 400
+    assert not HomeItem.objects.filter(user=other_member).exists()
+
+    # an approver can pin any member's request in the company
+    client.force_authenticate(user=approver)
+    res = client.post("/api/home-items/", {"item_type": "pinned_request", "request": req.id})
+    assert res.status_code == 201
+
+
+@pytest.mark.django_db
+def test_pinned_request_hidden_when_pinning_users_role_is_downgraded():
+    client = APIClient()
+    owner = User.objects.create_user(email="pindowngradeowner@test.com", password="pass")
+    approver = User.objects.create_user(email="pindowngradeapprover@test.com", password="pass")
+    company = Company.objects.create(name="Downgrade Pin Co", created_by=owner)
+    Membership.objects.create(user=owner, company=company, role="member")
+    approver_membership = Membership.objects.create(user=approver, company=company, role="approver")
+    req = Request.objects.create(company=company, created_by=owner,
+                                 status=Request.Status.SUBMITTED, title="Owner's request")
+
+    client.force_authenticate(user=approver)
+    pinned_id = client.post("/api/home-items/", {"item_type": "pinned_request", "request": req.id}).data["id"]
+
+    res = client.get("/api/home-items/")
+    assert {item["id"] for item in res.data} == {pinned_id}
+
+    # demote approver -> member: the pin they made of someone else's request
+    # must stop being returned even though the HomeItem row still exists
+    approver_membership.role = "member"
+    approver_membership.save()
+
+    res = client.get("/api/home-items/")
+    assert res.data == []
+    assert HomeItem.objects.filter(id=pinned_id).exists()
 
 
 @pytest.mark.django_db

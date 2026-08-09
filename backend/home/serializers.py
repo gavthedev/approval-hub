@@ -1,7 +1,6 @@
-from rest_framework import serializers
-
 from approvals.models import Request
 from companies.models import Membership
+from rest_framework import serializers
 
 from .models import HomeItem
 
@@ -81,6 +80,14 @@ class HomeItemSerializer(serializers.ModelSerializer):
         ).exists():
             raise serializers.ValidationError("Only approvers and admins can add this stat.")
 
+    @staticmethod
+    def _check_request_visible(user, request_obj):
+        membership = Membership.objects.filter(user=user, company=request_obj.company, is_active=True).first()
+        if membership is None:
+            raise serializers.ValidationError("You are not a member of this company.")
+        if membership.role == Membership.Role.MEMBER and request_obj.created_by_id != user.id:
+            raise serializers.ValidationError("You can only pin your own requests.")
+
     def validate(self, attrs):
         item_type = attrs.get("item_type")
         user = self.context["request"].user
@@ -97,7 +104,7 @@ class HomeItemSerializer(serializers.ModelSerializer):
             request_obj = attrs.get("request")
             if not request_obj:
                 raise serializers.ValidationError("request is required for a pinned request.")
-            self._check_membership(user, request_obj.company)
+            self._check_request_visible(user, request_obj)
             attrs["company"] = request_obj.company
 
         elif item_type == HomeItem.ItemType.STAT:
