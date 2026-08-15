@@ -21,8 +21,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
-SECRET_KEY = config('SECRET_KEY', default='dev-secret-key')
-DEBUG = config('DEBUG', default=True, cast=bool)
+SECRET_KEY = config('SECRET_KEY')
+DEBUG = config('DEBUG', default=False, cast=bool)
 CSRF_TRUSTED_ORIGINS = ['https://approvalhub.ch', 'https://www.approvalhub.ch']
 
 ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost').split(',')
