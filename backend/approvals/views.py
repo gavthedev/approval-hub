@@ -223,11 +223,6 @@ class ReviewRequestView(APIView):
 
 
 def _get_visible_request(request, slug, pk):
-    """Scope a single-request lookup the same way the list view scopes its
-    queryset: members only ever get their own requests, approvers/admins get
-    the whole company. Without this a member could read or comment on any
-    other member's request by guessing its id.
-    """
     qs = Request.objects.filter(company__slug=slug, is_deleted=False)
     if request.membership.role == "member":
         qs = qs.filter(created_by=request.user)

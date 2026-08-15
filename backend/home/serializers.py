@@ -51,9 +51,6 @@ class HomeItemSerializer(serializers.ModelSerializer):
                 qs = qs.filter(company__memberships__user=user, company__memberships__is_active=True)
             qs = qs.filter(created_by=user, status__in=[Request.Status.SUBMITTED, Request.Status.IN_REVIEW])
         elif obj.stat_kind == HomeItem.StatKind.PENDING_MY_APPROVAL:
-            # Company-wide visibility here is approver/admin-only (same boundary
-            # RequestListCreateView enforces for the request list itself), and is
-            # re-checked live rather than only at creation, since role can change.
             qs = qs.filter(
                 status=Request.Status.IN_REVIEW,
                 company__memberships__user=user,
