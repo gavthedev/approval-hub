@@ -20,4 +20,5 @@ jobs:
             git config --global --add safe.directory /opt/approval-hub
             cd /opt/approval-hub
             git pull
-            docker compose up --build -d
+            docker compose build --no-cache
+            docker compose up -d --force-recreate
