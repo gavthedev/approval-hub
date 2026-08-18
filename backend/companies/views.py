@@ -1,6 +1,7 @@
 import resend
 from decouple import config
 from django.utils import timezone
+from django.utils.html import escape
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.generics import ListCreateAPIView
@@ -42,14 +43,16 @@ def _create_invite(company, email, role, created_by):
 
 
 def _send_invite_email(company, email, first_name, invite):
+    safe_company_name = escape(company.name)
+    safe_first_name = escape(first_name)
     resend.Emails.send({
         "from": "noreply@approvalhub.ch",
         "to": email,
         "subject": f"You've been invited to {company.name} on ApprovalHub",
         "html": f"""
-            <h2>Welcome to {company.name}!</h2>
-            <p>Hi {first_name},</p>
-            <p>You have been invited to join <strong>{company.name}</strong> on ApprovalHub.</p>
+            <h2>Welcome to {safe_company_name}!</h2>
+            <p>Hi {safe_first_name},</p>
+            <p>You have been invited to join <strong>{safe_company_name}</strong> on ApprovalHub.</p>
             <p>Click the link below to set up your account:</p>
             <a href="https://approvalhub.ch/invite/{invite.token}">Accept Invitation</a>
             <p>This link expires in 7 days.</p>

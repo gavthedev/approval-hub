@@ -39,7 +39,17 @@
       "Bash(grep -rn \"requests/\\\\${\" frontend/src --include=\"*.tsx\" --include=\"*.ts\")",
       "Bash(python -m pytest approvals/tests.py -q)",
       "Bash(python -m pytest approvals/tests.py -v)",
-      "Bash(python manage.py shell -c ' *)"
+      "Bash(python manage.py shell -c ' *)",
+      "Bash(gh run *)",
+      "Bash(ssh *)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(git ls-remote *)",
+      "Bash(git check-ignore *)",
+      "Bash(git log *)",
+      "Bash(curl -s -D - -o /dev/null \"https://approvalhub.ch/\")",
+      "Bash(curl -s \"https://approvalhub.ch/\")",
+      "Bash(curl -s \"https://approvalhub.ch/assets/index-DFLjOQPr.js\" -o /tmp/live-bundle.js)",
+      "Read(//tmp/**)"
     ]
   }
 }

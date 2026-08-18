@@ -1,6 +1,8 @@
 import resend
 from companies.models import Invite, Membership
 from decouple import config
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from django.utils import timezone
 from rest_framework import serializers
 from rest_framework import status
@@ -38,6 +40,11 @@ def register(request):
         )
 
     if not User.objects.filter(email=email).exists():
+        try:
+            validate_password(password)
+        except DjangoValidationError as e:
+            return Response({"error": " ".join(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
         user = User.objects.create_user(
             email=email,
             password=password,
@@ -164,6 +171,11 @@ def claim_invite(request, token):
         error = _verify_dob(user, date_of_birth)
         if error:
             return error
+
+        try:
+            validate_password(password, user)
+        except DjangoValidationError as e:
+            return Response({"error": " ".join(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
 
         user.set_password(password)
         user.is_active = True

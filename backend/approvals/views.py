@@ -4,13 +4,13 @@ from companies.models import Company, Membership
 from companies.permissions import IsCompanyMember, IsCompanyApprover, IsCompanyAdmin
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.exceptions import ValidationError, NotFound
+from rest_framework.exceptions import ValidationError, NotFound, PermissionDenied
 from rest_framework.generics import CreateAPIView, ListCreateAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from .models import Request, TicketType, TicketTypeField, RequestAttachment
+from .models import Request, TicketType, TicketTypeField, RequestAttachment, Approval
 from .serializers import RequestSerializer, ApprovalSerializer, TicketTypeSerializer, TicketTypeFieldSerializer, \
     RequestCommentSerializer
 
@@ -127,6 +127,32 @@ class RequestListCreateView(ListCreateAPIView):
                 if key.startswith("data.") and not self.request.FILES.get(key)
             }
 
+        uploaded_files = {
+            key[5:]: file for key, file in self.request.FILES.items() if key.startswith("data.")
+        }
+        file_fields = {
+            f.name: f for f in ticket_type.fields.filter(field_type=TicketTypeField.FieldType.FILE)
+        }
+        for field_name, file in uploaded_files.items():
+            field = file_fields.get(field_name)
+            if not field:
+                continue
+            if field.allowed_file_types:
+                allowed = {
+                    ext.strip().lower().lstrip(".")
+                    for ext in field.allowed_file_types.split(",") if ext.strip()
+                }
+                ext = file.name.rsplit(".", 1)[-1].lower() if "." in file.name else ""
+                if ext not in allowed:
+                    raise ValidationError(
+                        f"'{file.name}' has an unsupported file type for '{field_name}'. "
+                        f"Allowed: {field.allowed_file_types}"
+                    )
+            if field.max_file_size and file.size > field.max_file_size * 1024 * 1024:
+                raise ValidationError(
+                    f"'{file.name}' exceeds the {field.max_file_size}MB limit for '{field_name}'."
+                )
+
         user = self.request.user
         first_name = user.first_name
         last_name = user.last_name
@@ -146,15 +172,14 @@ class RequestListCreateView(ListCreateAPIView):
         instance.save(update_fields=["title"])
         instance.transition_to(Request.Status.SUBMITTED, changed_by=user)
 
-        for key, file in self.request.FILES.items():
-            if key.startswith("data."):
-                RequestAttachment.objects.create(
-                    request=instance,
-                    file=file,
-                    filename=file.name,
-                    file_size=file.size,
-                    uploaded_by=user,
-                )
+        for field_name, file in uploaded_files.items():
+            RequestAttachment.objects.create(
+                request=instance,
+                file=file,
+                filename=file.name,
+                file_size=file.size,
+                uploaded_by=user,
+            )
 
 
 class ApproveRequestView(CreateAPIView):
@@ -169,10 +194,13 @@ class ApproveRequestView(CreateAPIView):
         except Request.DoesNotExist:
             raise NotFound("Request not found.")
 
+        if approval_request.created_by_id == self.request.user.id:
+            raise PermissionDenied("You cannot approve your own request.")
+
         if not approval_request.can_transition_to(Request.Status.APPROVED):
             raise ValidationError(f"Cannot approve a request with status '{approval_request.status}'.")
 
-        serializer.save(approver=self.request.user, request=approval_request)
+        serializer.save(approver=self.request.user, request=approval_request, decision=Approval.Decision.APPROVED)
         approval_request.transition_to(
             Request.Status.APPROVED,
             changed_by=self.request.user,
@@ -192,10 +220,13 @@ class RejectRequestView(CreateAPIView):
         except Request.DoesNotExist:
             raise NotFound("Request not found.")
 
+        if approval_request.created_by_id == self.request.user.id:
+            raise PermissionDenied("You cannot reject your own request.")
+
         if not approval_request.can_transition_to(Request.Status.REJECTED):
             raise ValidationError(f"Cannot reject a request with status '{approval_request.status}'.")
 
-        serializer.save(approver=self.request.user, request=approval_request)
+        serializer.save(approver=self.request.user, request=approval_request, decision=Approval.Decision.REJECTED)
         approval_request.transition_to(
             Request.Status.REJECTED,
             changed_by=self.request.user,
@@ -211,6 +242,9 @@ class ReviewRequestView(APIView):
             approval_request = Request.objects.get(id=pk, company__slug=slug, is_deleted=False)
         except Request.DoesNotExist:
             raise NotFound("Request not found.")
+
+        if approval_request.created_by_id == request.user.id:
+            raise PermissionDenied("You cannot review your own request.")
 
         if not approval_request.can_transition_to(Request.Status.IN_REVIEW):
             raise ValidationError(f"Cannot move a request with status '{approval_request.status}' to review.")
