@@ -36,6 +36,8 @@ class Company(models.Model):
 
 
 class Membership(models.Model):
+    objects = models.Manager()
+
     class Role(models.TextChoices):
         ADMIN = "admin", "Admin"
         APPROVER = "approver", "Approver"

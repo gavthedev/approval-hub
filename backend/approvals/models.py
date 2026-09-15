@@ -58,6 +58,8 @@ class TicketTypeField(models.Model):
 
 
 class Request(models.Model):
+    objects = models.Manager()
+
     class Status(models.TextChoices):
         DRAFT = "draft", "Draft"
         SUBMITTED = "submitted", "Submitted"

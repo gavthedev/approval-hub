@@ -1,5 +1,6 @@
 from approvals.models import Request
 from companies.models import Membership
+# noinspection PyPackageRequirements
 from rest_framework import serializers
 
 from .models import HomeItem
@@ -31,10 +32,12 @@ class HomeItemSerializer(serializers.ModelSerializer):
         read_only_fields = ["created_at"]
         extra_kwargs = {"request": {"write_only": True}}
 
-    def get_company_slug(self, obj):
+    @staticmethod
+    def get_company_slug(obj):
         return obj.company.slug if obj.company_id else None
 
-    def get_company_name(self, obj):
+    @staticmethod
+    def get_company_name(obj):
         return obj.company.name if obj.company_id else None
 
     def get_value(self, obj):
