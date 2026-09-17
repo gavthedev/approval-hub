@@ -1,6 +1,5 @@
 from datetime import date
 
-from companies.models import Company, Membership
 from companies.permissions import IsCompanyMember, IsCompanyApprover, IsCompanyAdmin
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
@@ -95,16 +94,13 @@ class RequestListCreateView(ListCreateAPIView):
     def get_queryset(self):
         slug = self.kwargs["slug"]
         qs = Request.objects.filter(company__slug=slug, is_deleted=False)
-        membership = Membership.objects.filter(
-            user=self.request.user, company__slug=slug, is_active=True
-        ).first()
-        if membership and membership.role == "member":
+        if self.request.membership.role == "member":
             qs = qs.filter(created_by=self.request.user)
         return qs
 
     def perform_create(self, serializer):
         slug = self.kwargs["slug"]
-        company = Company.objects.get(slug=slug)
+        company = self.request.membership.company
         ticket_type_id = self.request.data.get("ticket_type")
 
         try:

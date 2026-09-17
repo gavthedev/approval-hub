@@ -3,7 +3,6 @@ import {useNavigate, useParams} from 'react-router-dom'
 import {ArrowLeft, Check, Loader2, Paperclip, X} from 'lucide-react'
 import {Button} from '@/components/ui/button'
 import {Card, CardContent, CardHeader, CardTitle} from '@/components/ui/card'
-import {Badge} from '@/components/ui/badge'
 import {Textarea} from '@/components/ui/textarea'
 import {cn} from '@/lib/utils'
 import {apiError, getDataEntries, statusConfig} from '@/lib/requestDisplay'
@@ -115,15 +114,9 @@ export default function RequestDetail() {
                 </button>
                 <div className="flex flex-wrap items-center gap-3">
                     <h1 className="text-2xl font-semibold text-slate-900">
-                        {request.title || request.ticket_type_name}
+                        {request.ticket_type_name}
                     </h1>
-                    <Badge variant="outline" className={cn('text-xs', config.className)}>
-                        {config.label}
-                    </Badge>
                 </div>
-                <p className="mt-1 text-sm text-slate-500">
-                    {request.created_by_name} · {formatDateTime(request.created_at)}
-                </p>
             </div>
 
             {isApprover && (request.status === 'submitted' || request.status === 'in_review') && (
