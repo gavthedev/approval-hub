@@ -114,7 +114,7 @@ export default function RequestDetail() {
                 </button>
                 <div className="flex flex-wrap items-center gap-3">
                     <h1 className="text-2xl font-semibold text-slate-900">
-                        {request.ticket_type_name}
+                        {request.ticket_type_name} by {request.created_by_name}
                     </h1>
                 </div>
             </div>
